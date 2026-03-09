@@ -25,9 +25,9 @@ public class JwtService {
     }
 
     // Creates a JWT for a given user ID.
-    public String generateToken(Long userID) {
+    public String generateToken(Long userId) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMs);
+        Date expiry = new Date(now.getTime() + expirationMs);
 
         // Builds the JWT with subject = userId, timestamps, signs it, then returns it as a string.
         return Jwts.builder()
