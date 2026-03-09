@@ -21,8 +21,16 @@ node_modules/
 dist/
 build/
 coverage/
+server/target/
+*.class
 
 # Environment files
 .env
 .env.*
 !.env.example
+
+# Java / Maven / IDE
+.classpath
+.project
+.settings/
+server/.mvn/wrapper/maven-wrapper.jar
