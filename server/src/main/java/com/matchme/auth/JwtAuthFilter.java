@@ -75,7 +75,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         // filterChain.doFilter(...) passes control to the next filter (and eventually to controllers).
-        FilterChain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }
 
