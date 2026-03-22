@@ -18,8 +18,9 @@ public class Profile {
     private Long id;
 
     // One profile per user (unique user_id in DB)
-    @OneToOne
+    @OneToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     @Column(name = "display_name", nullable = false, length = 100)
     private String displayName;
