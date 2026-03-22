@@ -1,0 +1,13 @@
+### Login
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "test1@example.com",
+  "password": "password123"
+}
+
+### Profile
+GET http://localhost:8080/users/1/profile
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzc0MjA4MTE1LCJleHAiOjE3NzQyOTQ1MTV9.1CWSy7HPOPRXTqH1D9PUqsECzkJhjrQzPeI3IMSI2FfnQORccK2k_2Z_KSb6EO5gl4gNkkEViIrKlz6xylhj8Q
+
