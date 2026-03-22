@@ -1,5 +1,6 @@
 package com.matchme.user;
 
+import com.matchme.profile.ProfileRepository;
 import com.matchme.user.dto.MeResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,9 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController {
 
     private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
 
-    public MeController(UserRepository userRepository) {
+    public MeController(UserRepository userRepository, ProfileRepository profileRepository) {
         this.userRepository = userRepository;
+        this.profileRepository = profileRepository;
     }
 
     @GetMapping("/me")
@@ -24,8 +27,13 @@ public class MeController {
         return userRepository.findById(userId)
                 // fetch the user to confirm existence.
                 .map(user -> {
-                    // Profile not implemented yet, so name and profileImageUrl are null for now
-                    return ResponseEntity.ok(new MeResponse(user.getId(),null, null   ));
+                    // Try to fetch profile to get name + image
+                    var profile = profileRepository.findByUserId(userId).orElse(null);
+
+                    String name = (profile != null) ? profile.getDisplayName() : null;
+                    String profileImageUrl = (profile != null) ? profile.getProfilePictureUrl() : null;
+
+                    return ResponseEntity.ok(new MeResponse(user.getId(), name, profileImageUrl));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
