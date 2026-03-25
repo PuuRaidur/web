@@ -11,7 +11,7 @@ These features depend on the user and profile system.
 
 ---
 
-# Phase 1 – Recommendation Data Access
+# Phase 1 – Recommendation Data Access (finished, but not tested)
 
 Before implementing recommendation logic, backend must be able to read:
 
