@@ -21,7 +21,7 @@ public class UserController {
     // public user summary: id + display name + profile picture
     @GetMapping("/{id}")
     public ResponseEntity<UserSummaryResponse> getUser(@PathVariable Long id) {
-        // veryfy the user exists
+        // verify the user exists
         if (userRepository.findById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
