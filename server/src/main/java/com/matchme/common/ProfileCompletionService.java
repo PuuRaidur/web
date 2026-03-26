@@ -37,6 +37,13 @@ public class ProfileCompletionService {
         return true;
     }
 
+    // throws if user profile/bio is incomplete (use this in controllers)
+    public void requireComplete(Long userId) {
+        if (!isProfileComplete(userId)) {
+            throw new IllegalStateException("Profile incomplete");
+        }
+    }
+
     // helper to check null/empty/whitespace
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
