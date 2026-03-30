@@ -10,6 +10,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
 
+// for profile picture upload endpoint
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+
 @RestController
 public class ProfileController {
 
@@ -71,4 +79,76 @@ public class ProfileController {
                 profile.getLocation()
         );
     }
+
+    // upload profile picture and update profilePictureUrl
+    @PostMapping("/me/profile/picture")
+    public ResponseEntity<ProfileResponse> uploadProfilePicture(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file
+        ) throws Exception {
+        Long userId = (Long) authentication.getPrincipal(); // Uses the logged‑in user ID from the security context.
+
+        // find user and profile
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Finds the profile; if missing, creates a new one with a placeholder display name.
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    Profile p = new Profile();
+                    p.setUser(user);
+                    p.setDisplayName("User " + userId); // placeholder 8if not set yet
+                    return p;
+                });
+
+        // generate unique filename
+        String ext = "";
+        String original = file.getOriginalFilename();
+        if (original != null && original.contains(".")) {
+            ext = original.substring(original.lastIndexOf("."));
+        }
+        String filename = UUID.randomUUID() + ext; // Uses a random UUID to avoid filename collisions.
+
+
+        // save to disk
+        Path uploadDir = Paths.get("uploads");
+        Files.createDirectories(uploadDir);
+        Path uploadPath = uploadDir.resolve(filename);
+        Files.copy(file.getInputStream(), uploadPath);
+
+        // update profile picture URL
+        String url = "/uploads/" + filename;
+        profile.setProfilePictureUrl(url);
+        profile.setUpdatedAt(java.time.Instant.now());
+        Profile saved = profileRepository.save(profile);
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
+    // remove profile picture and clear URL
+    @DeleteMapping("/me/profile/picture")
+    public ResponseEntity<ProfileResponse> deleteProfilePicture(Authentication authentication) throws Exception {
+        Long userId = (Long) authentication.getPrincipal();
+
+        Profile  profile = profileRepository.findByUserId(userId)
+                .orElse(null);
+        if (profile == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // if a picture exists, delete the file
+        if (profile.getProfilePictureUrl() != null) {
+            String filename = profile.getProfilePictureUrl().replace("/uploads/", "");
+            Path uploadPath = Paths.get("uploads", filename);
+            Files.deleteIfExists(uploadPath);
+        }
+
+        // clear the URl and update profile
+        profile.setProfilePictureUrl(null);
+        profile.setUpdatedAt(java.time.Instant.now());
+        Profile saved = profileRepository.save(profile);
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
 }
