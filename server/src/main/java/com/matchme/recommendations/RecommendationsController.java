@@ -24,11 +24,9 @@ public class RecommendationsController {
     public ResponseEntity<RecommendationsResponse> getRecommendations(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
 
-        // Phase 1: Simple implementation - return up to 10 user IDs, excluding current user
-        // This will be enhanced in later phases with scoring algorithm
-        List<Long> recommendedIds = recommendationDataService.loadCanditates(currentUserId)
+        // Get candidates sorted by matching score
+        List<Long> recommendedIds = recommendationDataService.getRecommendedCandidates(currentUserId)
                 .stream()
-                .limit(10)
                 .map(candidate -> candidate.userId)
                 .collect(Collectors.toList());
 
