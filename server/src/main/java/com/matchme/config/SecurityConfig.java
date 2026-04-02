@@ -32,7 +32,7 @@ public class SecurityConfig {
                 // public endpoints
                 .authorizeHttpRequests(auth -> auth
                         // Allows /auth/** without login.
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**","/error").permitAll()
                         // Everything else needs JWT.
                         .anyRequest().authenticated()
                 )
