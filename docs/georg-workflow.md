@@ -11,7 +11,7 @@ These features depend on the user and profile system.
 
 ---
 
-# Phase 1 – Recommendation Data Access (finished, but not tested)
+# Phase 1 – Recommendation Data Access (done, but not tested)
 
 Before implementing recommendation logic, backend must be able to read:
 
@@ -48,7 +48,7 @@ Total score determines ranking.
 
 ---
 
-# Phase 3 – Location Filtering
+# Phase 3 – Location Filtering (done, but not tested)
 
 Recommendations must not include users who are too far away.
 
@@ -63,7 +63,7 @@ Tasks:
 
 ---
 
-# Phase 4 – Dismissed Recommendations
+# Phase 4 – Dismissed Recommendations (done, but not tested)
 
 If a user dismisses a recommendation, it must not appear again.
 
@@ -80,7 +80,7 @@ Recommendation query must exclude these users.
 
 ---
 
-# Phase 5 – Recommendation Endpoint
+# Phase 5 – Recommendation Endpoint (done, but not tested)
 
 Implement endpoint:
 
@@ -96,7 +96,7 @@ Frontend will fetch additional data separately.
 
 ---
 
-# Phase 6 – Connection Requests
+# Phase 6 – Connection Requests (done, but not tested)
 
 Users must be able to send connection requests.
 
@@ -116,7 +116,7 @@ POST /connections/request
 
 ---
 
-# Phase 7 – View Requests
+# Phase 7 – View Requests (done, but not tested)
 
 Users must be able to see incoming requests.
 
@@ -130,7 +130,7 @@ list of user IDs.
 
 ---
 
-# Phase 8 – Accept or Dismiss Request
+# Phase 8 – Accept or Dismiss Request (done, but not tested)
 
 Endpoints:
 
@@ -141,7 +141,7 @@ Accepting a request creates a connection.
 
 ---
 
-# Phase 9 – Connected Users
+# Phase 9 – Connected Users (done, but not tested)
 
 Create table:
 
@@ -162,7 +162,7 @@ list of connected user IDs.
 
 ---
 
-# Phase 10 – Disconnect
+# Phase 10 – Disconnect (done, but not tested)
 
 Users must be able to disconnect.
 
