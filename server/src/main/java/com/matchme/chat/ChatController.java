@@ -1,31 +1,44 @@
 package com.matchme.chat;
 
+import com.matchme.chat.dto.ChatListItem;
+import com.matchme.chat.dto.ChatResponse;
 import com.matchme.chat.dto.MessageResponse;
+import com.matchme.chat.dto.SendMessageRequest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import com.matchme.chat.dto.ChatResponse;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.matchme.chat.dto.SendMessageRequest;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.time.Instant;
 
 
-import java.util.List;
+
 @RestController
 @RequestMapping("/chats")
 public class ChatController {
 
-    private MessageRepository messageRepository;
     private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
+    private final ChatReadRepository chatReadRepository;
 
-    public ChatController(MessageRepository messageRepository, ChatRepository chatRepository) {
-        this.messageRepository = messageRepository;
+
+    public ChatController(ChatRepository chatRepository,
+                          MessageRepository messageRepository,
+                          ChatReadRepository chatReadRepository) {
         this.chatRepository = chatRepository;
+        this.messageRepository = messageRepository;
+        this.chatReadRepository = chatReadRepository;
     }
+
 
     // get paginated message history for a chat
     @GetMapping("/{chatId}/messages")
@@ -131,6 +144,93 @@ public class ChatController {
                 saved.getCreatedAt()
         ));
     }
+
+    // List chats for current user, ordered by most recent message
+    @GetMapping
+    public ResponseEntity<List<ChatListItem>> listChats(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        var chats = chatRepository.findByUserId(userId);
+
+        List<ChatListItem> items = chats.stream()
+                .map(chat -> {
+                    Long otherUserId = chat.getUser1Id().equals(userId)
+                            ? chat.getUser2Id()
+                            : chat.getUser1Id();
+
+                    var lastMessageOpt = messageRepository.findFirstByChatIdOrderByCreatedAtDesc(chat.getId());
+                    String lastMessage = lastMessageOpt.map(Message::getContent).orElse(null);
+                    var lastMessageAt = lastMessageOpt.map(Message::getCreatedAt).orElse(null);
+
+                    // Determine unread count using chat_reads
+                    var read = chatReadRepository.findByChatIdAndUserId(chat.getId(), userId).orElse(null);
+                    long unreadCount = 0;
+                    if (read != null) {
+                        unreadCount = messageRepository.countByChatIdAndCreatedAtAfter(
+                                chat.getId(),
+                                read.getLastReadAt()
+                        );
+                    } else {
+                        // If no read record, count all messages
+                        unreadCount = messageRepository.countByChatIdAndCreatedAtAfter(
+                                chat.getId(),
+                                java.time.Instant.EPOCH
+                        );
+                    }
+
+                    return new ChatListItem(
+                            chat.getId(),
+                            otherUserId,
+                            lastMessage,
+                            lastMessageAt,
+                            unreadCount
+                    );
+                })
+                // Sort by most recent message time (nulls last)
+                .sorted(Comparator.comparing(
+                        (ChatListItem item) -> item.lastMessageAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ))
+                .toList();
+
+        return ResponseEntity.ok(items);
+    }
+
+    // Mark a chat as read for the current user
+    @PostMapping("/{chatId}/read")
+    public ResponseEntity<Void> markAsRead(
+            @PathVariable Long chatId,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        // Ensure chat exists
+        var chat = chatRepository.findById(chatId).orElse(null);
+        if (chat == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Ensure user is a participant
+        boolean isParticipant = chat.getUser1Id().equals(userId) || chat.getUser2Id().equals(userId);
+        if (!isParticipant) {
+            return ResponseEntity.status(403).build();
+        }
+
+        var read = chatReadRepository.findByChatIdAndUserId(chatId, userId)
+                .orElseGet(() -> {
+                    ChatRead cr = new ChatRead();
+                    cr.setChatId(chatId);
+                    cr.setUserId(userId);
+                    return cr;
+                });
+
+        read.setLastReadAt(Instant.now());
+        chatReadRepository.save(read);
+
+        return ResponseEntity.ok().build();
+    }
+
+
 
 
 }
