@@ -16,16 +16,18 @@ public class MatchingService {
     
     /**
      * Calculates matching scores for all candidates against the current user.
-     * 
+     *
      * @param currentUser The current user's data
      * @param candidates List of potential matches
      * @return List of candidates sorted by matching score (highest first)
      */
     public List<RecommendationCandidate> findBestMatches(RecommendationCandidate currentUser,
                                                           List<RecommendationCandidate> candidates) {
-        
+
         MatchingProperties currentUserProps = MatchingProperties.fromRawData(
-                currentUser.location,
+                currentUser.latitude,
+                currentUser.longitude,
+                currentUser.preferredDistanceKm,
                 currentUser.hobbies,
                 currentUser.musicPreferences,
                 currentUser.foodPreferences,
@@ -48,9 +50,11 @@ public class MatchingService {
      */
     private MatchingScore calculateMatchingScore(MatchingProperties currentUser,
                                                   RecommendationCandidate candidate) {
-        
+
         MatchingProperties candidateProps = MatchingProperties.fromRawData(
-                candidate.location,
+                candidate.latitude,
+                candidate.longitude,
+                candidate.preferredDistanceKm,
                 candidate.hobbies,
                 candidate.musicPreferences,
                 candidate.foodPreferences,
@@ -102,17 +106,12 @@ public class MatchingService {
     }
     
     /**
-     * Calculates location-based score.
-     * Currently uses exact match, but can be enhanced with distance calculation.
+     * Calculates location-based score using distance calculation.
+     * Uses Haversine formula to calculate distance and scores based on preferred distance.
      */
     private double calculateLocationScore(MatchingProperties currentUser,
                                            MatchingProperties candidateProps) {
-        // TODO: Enhance with actual distance calculation using coordinates
-        // For now, use exact string match
-        return currentUser.calculateStringMatch(
-                candidateProps.getLocation(), 
-                currentUser.getLocation()
-        );
+        return currentUser.calculateDistanceScore(candidateProps);
     }
     
     /**
