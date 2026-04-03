@@ -18,7 +18,7 @@ public class JwtService {
     // Constructor. Spring injects the config values into parameters.
     public JwtService(
             @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.expirationMs}") long expirationMs
+            @Value("${jwt.expiration-ms}") long expirationMs
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)); // Creates an HMAC key from the secret string.
         this.expirationMs = expirationMs; // Stores expiration time (milliseconds).

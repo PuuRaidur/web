@@ -11,8 +11,14 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<?> handleIllegalStateException(IllegalStateException ex) {
         if ("Profile incomplete".equals(ex.getMessage())) {
-            return ResponseEntity.status(404).body("Profile incomplete");
+            return ResponseEntity.status(403).body("Profile incomplete");
         }
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    // map validation errors (e.g., email already in use) to HTTP 400
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }
