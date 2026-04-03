@@ -4,8 +4,7 @@ import com.matchme.recommendations.dto.RecommendationsResponse;
 import com.matchme.recommendations.RecommendationDataService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,12 +13,15 @@ import java.util.stream.Collectors;
 public class RecommendationsController {
 
     private final RecommendationDataService recommendationDataService;
+    private final DismissedRecommendationRepository dismissedRecommendationRepository;
 
-    public RecommendationsController(RecommendationDataService recommendationDataService) {
+    public RecommendationsController(RecommendationDataService recommendationDataService,
+                                     DismissedRecommendationRepository dismissedRecommendationRepository) {
         this.recommendationDataService = recommendationDataService;
+        this.dismissedRecommendationRepository = dismissedRecommendationRepository;
     }
 
-    // Get up to 10 recommended user IDs (excluding current user)
+    // Get up to 10 recommended user IDs (excluding current user and dismissed users)
     @GetMapping("/recommendations")
     public ResponseEntity<RecommendationsResponse> getRecommendations(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
@@ -31,5 +33,22 @@ public class RecommendationsController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(new RecommendationsResponse(recommendedIds));
+    }
+
+    // Dismiss a recommendation so it won't appear again
+    @PostMapping("/recommendations/dismiss/{userId}")
+    public ResponseEntity<Void> dismissRecommendation(Authentication authentication,
+                                                       @PathVariable Long userId) {
+        Long currentUserId = (Long) authentication.getPrincipal();
+
+        // Prevent duplicate dismissals
+        if (!dismissedRecommendationRepository.existsByUserIdAndDismissedUserId(currentUserId, userId)) {
+            DismissedRecommendation dismissal = new DismissedRecommendation();
+            dismissal.setUserId(currentUserId);
+            dismissal.setDismissedUserId(userId);
+            dismissedRecommendationRepository.save(dismissal);
+        }
+
+        return ResponseEntity.ok().build();
     }
 }
