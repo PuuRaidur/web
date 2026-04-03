@@ -17,22 +17,27 @@ public class RecommendationDataService {
     private final BioRepository bioRepository;
     private final ProfileRepository profileRepository;
     private final MatchingService matchingService;
+    private final DismissedRecommendationRepository dismissedRecommendationRepository;
 
     public RecommendationDataService(UserRepository userRepository,
                                      BioRepository bioRepository,
                                      ProfileRepository profileRepository,
-                                     MatchingService matchingService) {
+                                     MatchingService matchingService,
+                                     DismissedRecommendationRepository dismissedRecommendationRepository) {
 
         this.userRepository = userRepository;
         this.bioRepository = bioRepository;
         this.profileRepository = profileRepository;
         this.matchingService = matchingService;
+        this.dismissedRecommendationRepository = dismissedRecommendationRepository;
     }
 
-    // load canditates with profile + bio data (excluding current user)
+    // load canditates with profile + bio data (excluding current user and dismissed users)
     public List<RecommendationCandidate> loadCanditates(Long currentUserId) {
-        return userRepository.findAllByIdNot(currentUserId) // Gets all users except the current user.
+        // Get list of dismissed user IDs for this user
+        List<Long> dismissedUserIds = dismissedRecommendationRepository.findDismissedUserIdsByUserId(currentUserId);
 
+        return userRepository.findAllByIdNotAndIdNotIn(currentUserId, dismissedUserIds)
                 .stream() // Starts streaming the list so we can transform it.
                 .map(user -> {
                     var profile = profileRepository.findByUserId(user.getId()).orElse(null);
@@ -46,6 +51,9 @@ public class RecommendationDataService {
                     return new RecommendationCandidate(
                             user.getId(),
                             profile.getLocation(),
+                            profile.getLatitude(),
+                            profile.getLongitude(),
+                            profile.getPreferredDistanceKm(),
                             bio.getHobbies(),
                             bio.getMusicPreferences(),
                             bio.getFoodPreferences(),
@@ -93,6 +101,9 @@ public class RecommendationDataService {
         return new RecommendationCandidate(
                 currentUserId,
                 profile.getLocation(),
+                profile.getLatitude(),
+                profile.getLongitude(),
+                profile.getPreferredDistanceKm(),
                 bio.getHobbies(),
                 bio.getMusicPreferences(),
                 bio.getFoodPreferences(),
