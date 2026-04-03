@@ -37,6 +37,17 @@ public class Profile {
     @Column(name = "location", length = 100)
     private String location;
 
+    // Geographic coordinates for distance-based matching
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    // Preferred matching distance in kilometers
+    @Column(name = "preferred_distance_km")
+    private Integer preferredDistanceKm;
+
     // Timestamps
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
