@@ -27,7 +27,7 @@ Tasks:
 
 ---
 
-# Phase 2 – Recommendation Algorithm
+# Phase 2 – Recommendation Algorithm (done, but not tested)
 
 Implement recommendation scoring system.
 

@@ -48,6 +48,47 @@
 
 ---
 
+## Java
+
+### Official Documentation
+- [Oracle Java Documentation](https://docs.oracle.com/en/java/)
+- [Java SE 17 Documentation](https://docs.oracle.com/en/java/javase/17/docs/api/)
+- [Java Tutorials (Oracle)](https://docs.oracle.com/javase/tutorial/)
+- [OpenJDK Documentation](https://openjdk.org/)
+
+### Cheatsheets & Quick References
+- [Java Cheat Sheet (Baeldung)](https://www.baeldung.com/java-cheat-sheet)
+- [Java Streams Cheat Sheet](https://www.baeldung.com/java-streams-cheat-sheet)
+- [Java Collections Cheat Sheet](https://www.baeldung.com/java-collections-cheat-sheet)
+- [Java 8+ Features Cheat Sheet](https://www.baeldung.com/java-8-cheat-sheet)
+- [Java Generics Cheat Sheet](https://www.baeldung.com/java-generics-cheat-sheet)
+- [Java Exceptions Cheat Sheet](https://www.baeldung.com/exception-handling-java-cheat-sheet)
+- [Java Concurrency Cheat Sheet](https://www.baeldung.com/java-concurrency-cheat-sheet)
+- [Java Date & Time API Cheat Sheet](https://www.baeldung.com/java-8-date-time-api-cheat-sheet)
+
+### Modern Java Features
+- [Java 17 New Features](https://www.baeldung.com/java-17-new-features)
+- [Java 21 New Features](https://www.baeldung.com/java-21-new-features)
+- [Records in Java](https://docs.oracle.com/en/java/javase/17/language/records.html)
+- [Pattern Matching for Java](https://docs.oracle.com/en/java/javase/17/language/pattern-matching.html)
+- [Sealed Classes](https://docs.oracle.com/en/java/javase/17/language/sealed-classes-and-interfaces.html)
+
+### Tutorials & Guides
+- [Baeldung - Java](https://www.baeldung.com/)
+- [Java Brains YouTube](https://www.youtube.com/c/JavaBrainsChannel)
+- [Amigoscode - Java](https://www.youtube.com/c/amigoscode)
+- [Telusko - Java](https://www.youtube.com/c/Telusko)
+- [Java Design Patterns](https://java-design-patterns.com/)
+- [Refactoring Guru - Java](https://refactoring.guru/design-patterns/java)
+
+### Best Practices
+- [Effective Java (Book)](https://www.oreilly.com/library/view/effective-java-3rd/9780134686097/)
+- [Java Best Practices (Baeldung)](https://www.baeldung.com/java-best-practices)
+- [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
+- [Oracle Code Conventions](https://www.oracle.com/java/technologies/javase/codeconventions-introduction.html)
+
+---
+
 ## Spring Boot & Backend
 
 ### Official Documentation
