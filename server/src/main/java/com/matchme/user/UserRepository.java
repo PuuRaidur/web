@@ -10,4 +10,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Find all users except the one with the given id (for recommendations)
     List<User> findAllByIdNot(Long excludeId);
+
+    // Find all users except the given id and not in the list of excluded ids (for recommendations with dismissals)
+    List<User> findAllByIdNotAndIdNotIn(Long excludeId, List<Long> excludedIds);
 }
