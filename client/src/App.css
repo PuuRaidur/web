@@ -276,6 +276,49 @@
   font-weight: 600;
 }
 
+/* Profile setup form */
+.form-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.form-card {
+  background: var(--surface-soft);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.form-field input,
+.form-field textarea {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form-field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.field-error {
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;

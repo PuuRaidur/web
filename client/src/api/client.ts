@@ -2,6 +2,8 @@ import type {
   ConnectionRequestResponse,
   ConnectionResponse,
   MeResponse,
+  ProfileResponse,
+  BioResponse,
   RecommendationResponse,
   UserSummary,
 } from "./types";
@@ -75,6 +77,39 @@ export async function fetchUserSummary(id: number) {
 
 export async function fetchMe() {
   return apiFetch<MeResponse>("/me");
+}
+
+export async function fetchMyProfile() {
+  return apiFetch<ProfileResponse>("/me/profile");
+}
+
+export async function fetchMyBio() {
+  return apiFetch<BioResponse>("/me/bio");
+}
+
+export async function updateMyProfile(profile: {
+  displayName: string;
+  aboutMe: string;
+  profilePictureUrl: string | null;
+  location: string;
+}) {
+  return apiFetch<ProfileResponse>("/me/profile", {
+    method: "PUT",
+    body: JSON.stringify(profile),
+  });
+}
+
+export async function updateMyBio(bio: {
+  hobbies: string;
+  musicPreferences: string;
+  foodPreferences: string;
+  interests: string;
+  lookingFor: string;
+}) {
+  return apiFetch<BioResponse>("/me/bio", {
+    method: "PUT",
+    body: JSON.stringify(bio),
+  });
 }
 
 export async function sendConnectionRequest(receiverId: number) {
