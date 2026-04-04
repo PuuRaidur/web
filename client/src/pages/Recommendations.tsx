@@ -27,6 +27,11 @@ export default function Recommendations() {
         const outgoing = await fetchOutgoingConnectionRequests();
         // Fetch recommendation ids first.
         const { ids } = await fetchRecommendations();
+        if (ids.length === 0 && outgoing.ids.length > 0) {
+          setError("No recommendations yet. Complete your profile or try again later.");
+          setItems([]);
+          return;
+        }
         // Filter out the current user if the backend still includes it.
         const filteredIds = ids.filter(
           (id) => id !== me.id && !outgoing.ids.includes(id)

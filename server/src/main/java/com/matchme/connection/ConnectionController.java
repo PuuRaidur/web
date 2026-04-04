@@ -5,6 +5,7 @@ import com.matchme.connection.dto.ConnectionRequestCreate;
 import com.matchme.connection.dto.ConnectionRequestResponse;
 import com.matchme.connection.dto.ConnectionRequestsResponse;
 import com.matchme.connection.dto.ConnectionsResponse;
+import com.matchme.common.ProfileCompletionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +20,14 @@ public class ConnectionController {
 
     private final ConnectionRepository connectionRepository;
     private final ConnectionRequestRepository connectionRequestRepository;
+    private final ProfileCompletionService profileCompletionService;
 
     public ConnectionController(ConnectionRepository connectionRepository,
-                                ConnectionRequestRepository connectionRequestRepository) {
+                                ConnectionRequestRepository connectionRequestRepository,
+                                ProfileCompletionService profileCompletionService) {
         this.connectionRepository = connectionRepository;
         this.connectionRequestRepository = connectionRequestRepository;
+        this.profileCompletionService = profileCompletionService;
     }
 
     // Send a connection request
@@ -31,6 +35,7 @@ public class ConnectionController {
     public ResponseEntity<ConnectionRequestResponse> sendConnectionRequest(Authentication authentication,
                                                                             @RequestBody ConnectionRequestCreate request) {
         Long senderId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(senderId);
         Long receiverId = request.receiverId;
 
         // Prevent sending request to yourself
@@ -60,6 +65,7 @@ public class ConnectionController {
     @GetMapping("/connections/requests")
     public ResponseEntity<ConnectionRequestsResponse> getIncomingRequests(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         List<Long> requesterIds = connectionRequestRepository.findIncomingRequests(currentUserId)
                 .stream()
@@ -74,6 +80,7 @@ public class ConnectionController {
     @GetMapping("/connections/requests/outgoing")
     public ResponseEntity<ConnectionRequestsResponse> getOutgoingRequests(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         List<Long> receiverIds = connectionRequestRepository.findOutgoingRequests(currentUserId)
                 .stream()
@@ -90,6 +97,7 @@ public class ConnectionController {
     public ResponseEntity<Void> acceptConnectionRequest(Authentication authentication,
                                                          @RequestBody ConnectionRequestAction request) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         if (request == null || request.senderId == null) {
             return ResponseEntity.badRequest().build();
@@ -130,6 +138,7 @@ public class ConnectionController {
     public ResponseEntity<Void> dismissConnectionRequest(Authentication authentication,
                                                           @RequestBody ConnectionRequestAction request) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         if (request == null || request.senderId == null) {
             return ResponseEntity.badRequest().build();
@@ -159,6 +168,7 @@ public class ConnectionController {
     public ResponseEntity<Void> cancelConnectionRequest(Authentication authentication,
                                                          @RequestBody ConnectionRequestCreate request) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
         if (request == null || request.receiverId == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -179,6 +189,7 @@ public class ConnectionController {
     @GetMapping("/connections")
     public ResponseEntity<ConnectionsResponse> getConnections(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         List<Connection> connections = connectionRepository.findByUserId(currentUserId);
 
@@ -201,6 +212,7 @@ public class ConnectionController {
     public ResponseEntity<Void> disconnect(Authentication authentication,
                                             @PathVariable Long connectionId) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         Connection connection = connectionRepository.findById(connectionId).orElse(null);
         if (connection == null) {

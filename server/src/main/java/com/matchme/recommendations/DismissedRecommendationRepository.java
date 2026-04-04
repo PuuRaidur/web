@@ -12,6 +12,10 @@ public interface DismissedRecommendationRepository extends JpaRepository<Dismiss
     @Query("SELECT dr.dismissedUserId FROM DismissedRecommendation dr WHERE dr.userId = :userId")
     List<Long> findDismissedUserIdsByUserId(@Param("userId") Long userId);
 
+    // Find all users who dismissed the given user (used to exclude them from recommendations)
+    @Query("SELECT dr.userId FROM DismissedRecommendation dr WHERE dr.dismissedUserId = :userId")
+    List<Long> findUserIdsWhoDismissed(@Param("userId") Long userId);
+
     // Check if a user has already dismissed another user
     boolean existsByUserIdAndDismissedUserId(Long userId, Long dismissedUserId);
 }
