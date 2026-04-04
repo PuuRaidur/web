@@ -4,6 +4,11 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
 
+// Polyfill for libraries expecting a Node-style global.
+if (typeof window !== "undefined" && !(window as unknown as { global?: Window }).global) {
+  (window as unknown as { global: Window }).global = window;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>

@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import {
-  acceptConnectionRequest,
-  dismissConnectionRequest,
-  fetchConnectionRequests,
+  cancelConnectionRequest,
+  fetchOutgoingConnectionRequests,
   fetchUserSummary,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
 import Avatar from "../components/Avatar";
 
-export default function Requests() {
+export default function Pending() {
   const [items, setItems] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,8 +17,8 @@ export default function Requests() {
 
     async function load() {
       try {
-        // Fetch incoming request ids.
-        const { ids } = await fetchConnectionRequests();
+        // Fetch outgoing request ids.
+        const { ids } = await fetchOutgoingConnectionRequests();
         // Fetch user summary data for each id.
         const summaries = await Promise.all(ids.map(fetchUserSummary));
         if (isActive) {
@@ -43,40 +42,29 @@ export default function Requests() {
     };
   }, []);
 
-  async function handleAccept(userId: number) {
+  async function handleCancel(userId: number) {
     try {
-      // Accept the incoming request.
-      await acceptConnectionRequest(userId);
-      // Remove the request locally after success.
+      // Cancel the outgoing request.
+      await cancelConnectionRequest(userId);
+      // Remove the card locally after success.
       setItems((prev) => prev.filter((item) => item.id !== userId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to accept");
-    }
-  }
-
-  async function handleDismiss(userId: number) {
-    try {
-      // Dismiss the incoming request.
-      await dismissConnectionRequest(userId);
-      // Remove the request locally after success.
-      setItems((prev) => prev.filter((item) => item.id !== userId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to dismiss");
+      setError(err instanceof Error ? err.message : "Failed to cancel");
     }
   }
 
   return (
     <section className="page">
       <div className="page-head">
-        <h1>Connection Requests</h1>
-        <p>People who want to connect with you.</p>
+        <h1>Pending Requests</h1>
+        <p>People you have requested to connect with.</p>
       </div>
 
-      {loading && <p className="muted">Loading requests…</p>}
+      {loading && <p className="muted">Loading pending requests…</p>}
       {error && <p className="muted">{error}</p>}
 
       {!loading && !error && items.length === 0 && (
-        <p className="muted">No requests right now.</p>
+        <p className="muted">No pending requests right now.</p>
       )}
 
       <div className="card-stack">
@@ -85,22 +73,15 @@ export default function Requests() {
             <Avatar name={item.name} url={item.profilePictureUrl} />
             <div className="profile-meta">
               <h3>{item.name ?? `User ${item.id}`}</h3>
-              <p>Shared interests pending · Review profile</p>
+              <p>Awaiting response</p>
             </div>
             <div className="profile-actions">
               <button
-                className="primary-button"
-                type="button"
-                onClick={() => handleAccept(item.id)}
-              >
-                Accept
-              </button>
-              <button
                 className="ghost-button"
                 type="button"
-                onClick={() => handleDismiss(item.id)}
+                onClick={() => handleCancel(item.id)}
               >
-                Dismiss
+                Cancel request
               </button>
             </div>
           </article>
