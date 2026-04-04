@@ -167,4 +167,19 @@ public class ConnectionController {
         connectionRequestRepository.deleteBySenderIdAndReceiverId(request.senderId, currentUserId);
         return ResponseEntity.ok().build();
     }
+
+    // Cancel an outgoing connection request.
+    @PostMapping("/connections/cancel")
+    @Transactional
+    public ResponseEntity<Void> cancelConnectionRequest(Authentication authentication,
+                                                        @RequestBody ConnectionRequestCreate request) {
+        Long currentUserId = (Long) authentication.getPrincipal();
+
+        if (request == null || request.receiverId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        connectionRequestRepository.deleteBySenderIdAndReceiverId(currentUserId, request.receiverId);
+        return ResponseEntity.ok().build();
+    }
 }

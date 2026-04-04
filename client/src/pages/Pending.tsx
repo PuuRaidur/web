@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchOutgoingConnectionRequests, fetchUserSummary } from "../api/client";
+import {
+  cancelConnectionRequest,
+  fetchOutgoingConnectionRequests,
+  fetchUserSummary,
+} from "../api/client";
 import type { UserSummary } from "../api/types";
 
 export default function Pending() {
@@ -37,6 +41,17 @@ export default function Pending() {
     };
   }, []);
 
+  async function handleCancel(userId: number) {
+    try {
+      // Cancel the outgoing request.
+      await cancelConnectionRequest(userId);
+      // Remove the card locally after success.
+      setItems((prev) => prev.filter((item) => item.id !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel");
+    }
+  }
+
   return (
     <section className="page">
       <div className="page-head">
@@ -60,6 +75,15 @@ export default function Pending() {
             <div className="profile-meta">
               <h3>{item.name ?? `User ${item.id}`}</h3>
               <p>Awaiting response</p>
+            </div>
+            <div className="profile-actions">
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() => handleCancel(item.id)}
+              >
+                Cancel request
+              </button>
             </div>
           </article>
         ))}

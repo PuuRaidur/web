@@ -88,3 +88,7 @@ export async function acceptConnectionRequest(senderId: number) {
 export async function dismissConnectionRequest(senderId: number) {
   return apiPost("/connections/dismiss", { senderId });
 }
+
+export async function cancelConnectionRequest(receiverId: number) {
+  return apiPost("/connections/cancel", { receiverId });
+}
