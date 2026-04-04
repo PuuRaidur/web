@@ -5,6 +5,8 @@ import {
   fetchMyProfile,
   updateMyBio,
   updateMyProfile,
+  uploadProfilePicture,
+  deleteProfilePicture,
 } from "../api/client";
 
 type ProfileForm = {
@@ -22,6 +24,7 @@ type BioForm = {
 };
 
 export default function ProfileSetup() {
+  const apiBase = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
   const [profile, setProfile] = useState<ProfileForm>({
     displayName: "",
     aboutMe: "",
@@ -37,6 +40,9 @@ export default function ProfileSetup() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -54,6 +60,7 @@ export default function ProfileSetup() {
             aboutMe: existingProfile.aboutMe ?? "",
             location: existingProfile.location ?? "",
           });
+          setProfilePictureUrl(existingProfile.profilePictureUrl ?? null);
           setBio({
             hobbies: existingBio.hobbies ?? "",
             musicPreferences: existingBio.musicPreferences ?? "",
@@ -127,7 +134,7 @@ export default function ProfileSetup() {
       await updateMyProfile({
         displayName: profile.displayName,
         aboutMe: profile.aboutMe,
-        profilePictureUrl: null,
+        profilePictureUrl,
         location: profile.location,
       });
 
@@ -137,6 +144,33 @@ export default function ProfileSetup() {
       setStatus("Profile saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
+    }
+  }
+
+  async function handleUpload(file: File | null) {
+    if (!file) return;
+    setError(null);
+    setStatus(null);
+
+    try {
+      const updated = await uploadProfilePicture(file);
+      setProfilePictureUrl(updated.profilePictureUrl ?? null);
+      setStatus("Profile picture updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    }
+  }
+
+  async function handleRemovePhoto() {
+    setError(null);
+    setStatus(null);
+
+    try {
+      const updated = await deleteProfilePicture();
+      setProfilePictureUrl(updated.profilePictureUrl ?? null);
+      setStatus("Profile picture removed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Remove failed");
     }
   }
 
@@ -161,6 +195,44 @@ export default function ProfileSetup() {
       <div className="form-grid">
         <div className="form-card">
           <h2>Profile</h2>
+          <div className="photo-row">
+            {/*
+              If backend returns a relative URL (e.g. /uploads/xyz.jpg),
+              prefix it with the API base so the browser can load it.
+            */}
+            {(() => {
+              const displayUrl = profilePictureUrl?.startsWith("/")
+                ? `${apiBase}${profilePictureUrl}`
+                : profilePictureUrl;
+              return (
+                <div className="photo-preview">
+                  {displayUrl ? (
+                    <img src={displayUrl} alt="Profile" />
+                  ) : (
+                    <span>👤</span>
+                  )}
+                </div>
+              );
+            })()}
+            <div className="photo-actions">
+              <label className="ghost-button">
+                Upload photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleUpload(event.target.files?.[0] ?? null)}
+                  hidden
+                />
+              </label>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={handleRemovePhoto}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
           <label className="form-field">
             <span>Display name</span>
             <input
