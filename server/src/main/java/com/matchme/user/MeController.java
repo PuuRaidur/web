@@ -31,9 +31,9 @@ public class MeController {
                     var profile = profileRepository.findByUserId(userId).orElse(null);
 
                     String name = (profile != null) ? profile.getDisplayName() : null;
-                    String profileImageUrl = (profile != null) ? profile.getProfilePictureUrl() : null;
+                    String profilePictureUrl = (profile != null) ? profile.getProfilePictureUrl() : null;
 
-                    return ResponseEntity.ok(new MeResponse(user.getId(), name, profileImageUrl));
+                    return ResponseEntity.ok(new MeResponse(user.getId(), name, profilePictureUrl));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

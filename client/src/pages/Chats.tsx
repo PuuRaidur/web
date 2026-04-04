@@ -8,6 +8,7 @@ import {
   sendChatMessage,
 } from "../api/client";
 import type { ChatListItem, ChatMessage, UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Chats() {
   const [searchParams] = useSearchParams();
@@ -144,9 +145,7 @@ export default function Chats() {
                 }`}
                 onClick={() => setSelectedChatId(chat.chatId)}
               >
-                <div className="avatar">
-                  {user?.name?.slice(0, 2).toUpperCase() ?? "MM"}
-                </div>
+                <Avatar name={user?.name} url={user?.profilePictureUrl} />
                 <div className="chat-list-meta">
                   <div className="chat-list-title">
                     {user?.name ?? `User ${chat.otherUserId}`}

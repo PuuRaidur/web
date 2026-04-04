@@ -7,6 +7,7 @@ import {
   sendConnectionRequest,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Recommendations() {
   const [items, setItems] = useState<UserSummary[]>([]);
@@ -100,9 +101,7 @@ export default function Recommendations() {
       <div className="card-grid">
         {items.map((item) => (
           <article className="profile-card" key={item.id}>
-            <div className="avatar">
-              {item.name?.slice(0, 2).toUpperCase() ?? "MM"}
-            </div>
+            <Avatar name={item.name} url={item.profilePictureUrl} />
             <div className="profile-meta">
               <h3>{item.name ?? `User ${item.id}`}</h3>
               <p>Open to connect · Ask for details</p>

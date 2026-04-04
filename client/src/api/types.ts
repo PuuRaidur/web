@@ -13,13 +13,13 @@ export type ConnectionResponse = {
 export type UserSummary = {
   id: number;
   name: string | null;
-  profileImageUrl: string | null;
+  profilePictureUrl: string | null;
 };
 
 export type MeResponse = {
   id: number;
   name: string | null;
-  profileImageUrl: string | null;
+  profilePictureUrl: string | null;
 };
 
 export type ProfileResponse = {

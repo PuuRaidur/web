@@ -6,6 +6,7 @@ import {
   getOrCreateChat,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Connections() {
   const navigate = useNavigate();
@@ -79,9 +80,7 @@ export default function Connections() {
       <div className="card-grid">
         {items.map((item) => (
           <article className="connection-card" key={item.id}>
-            <div className="avatar">
-              {item.name?.slice(0, 2).toUpperCase() ?? "MM"}
-            </div>
+            <Avatar name={item.name} url={item.profilePictureUrl} />
             <div>
               <h3>{item.name ?? `User ${item.id}`}</h3>
               <p className="muted">Ready to chat</p>

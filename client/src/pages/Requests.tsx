@@ -6,6 +6,7 @@ import {
   fetchUserSummary,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Requests() {
   const [items, setItems] = useState<UserSummary[]>([]);
@@ -81,9 +82,7 @@ export default function Requests() {
       <div className="card-stack">
         {items.map((item) => (
           <article className="request-card" key={item.id}>
-            <div className="avatar">
-              {item.name?.slice(0, 2).toUpperCase() ?? "MM"}
-            </div>
+            <Avatar name={item.name} url={item.profilePictureUrl} />
             <div className="profile-meta">
               <h3>{item.name ?? `User ${item.id}`}</h3>
               <p>Shared interests pending · Review profile</p>

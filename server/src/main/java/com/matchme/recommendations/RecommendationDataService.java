@@ -37,7 +37,11 @@ public class RecommendationDataService {
         // Get list of dismissed user IDs for this user
         List<Long> dismissedUserIds = dismissedRecommendationRepository.findDismissedUserIdsByUserId(currentUserId);
 
-        return userRepository.findAllByIdNotAndIdNotIn(currentUserId, dismissedUserIds)
+        List<com.matchme.user.User> candidates = dismissedUserIds == null || dismissedUserIds.isEmpty()
+                ? userRepository.findAllByIdNot(currentUserId)
+                : userRepository.findAllByIdNotAndIdNotIn(currentUserId, dismissedUserIds);
+
+        return candidates
                 .stream() // Starts streaming the list so we can transform it.
                 .map(user -> {
                     var profile = profileRepository.findByUserId(user.getId()).orElse(null);
