@@ -2,6 +2,8 @@ import type {
   ConnectionRequestResponse,
   ConnectionResponse,
   MeResponse,
+  ChatListItem,
+  ChatMessage,
   ProfileResponse,
   BioResponse,
   RecommendationResponse,
@@ -139,5 +141,32 @@ export async function register(email: string, password: string) {
   return apiFetch<{ token: string }>("/auth/register", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function fetchChats() {
+  return apiFetch<ChatListItem[]>("/chats");
+}
+
+export async function fetchChatMessages(chatId: number, page = 0, size = 20) {
+  return apiFetch<ChatMessage[]>(
+    `/chats/${chatId}/messages?page=${page}&size=${size}`
+  );
+}
+
+export async function sendChatMessage(chatId: number, content: string) {
+  return apiFetch<ChatMessage>(`/chats/${chatId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function markChatRead(chatId: number) {
+  return apiPost(`/chats/${chatId}/read`);
+}
+
+export async function getOrCreateChat(otherUserId: number) {
+  return apiFetch<{ chatId: number }>(`/chats/with?otherUserId=${otherUserId}`, {
+    method: "POST",
   });
 }

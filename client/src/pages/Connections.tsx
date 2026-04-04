@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { fetchConnections, fetchUserSummary } from "../api/client";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchConnections,
+  fetchUserSummary,
+  getOrCreateChat,
+} from "../api/client";
 import type { UserSummary } from "../api/types";
 
 export default function Connections() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +42,16 @@ export default function Connections() {
       isActive = false;
     };
   }, []);
+
+  async function handleMessage(userId: number) {
+    try {
+      // Ensure the chat exists before navigating.
+      const { chatId } = await getOrCreateChat(userId);
+      navigate(`/chats?chatId=${chatId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open chat");
+    }
+  }
 
   return (
     <section className="page">
@@ -71,7 +87,11 @@ export default function Connections() {
               <p className="muted">Ready to chat</p>
             </div>
             <div className="connection-actions">
-              <button className="ghost-button" type="button">
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() => handleMessage(item.id)}
+              >
                 Message
               </button>
               <button className="danger-button" type="button">

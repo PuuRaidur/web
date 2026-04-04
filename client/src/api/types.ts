@@ -38,3 +38,19 @@ export type BioResponse = {
   interests: string | null;
   lookingFor: string | null;
 };
+
+export type ChatListItem = {
+  chatId: number;
+  otherUserId: number;
+  lastMessage: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+};
+
+export type ChatMessage = {
+  id: number;
+  chatId: number;
+  senderId: number;
+  content: string;
+  createdAt: string;
+};

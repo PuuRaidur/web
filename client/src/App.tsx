@@ -7,6 +7,7 @@ import Pending from "./pages/Pending";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProfileSetup from "./pages/ProfileSetup";
+import Chats from "./pages/Chats";
 import "./App.css";
 
 export default function App() {
@@ -39,6 +40,10 @@ export default function App() {
         <Route
           path="/profile"
           element={isAuthed ? <ProfileSetup /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/chats"
+          element={isAuthed ? <Chats /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/requests"

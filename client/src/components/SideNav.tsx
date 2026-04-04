@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 const links = [
   { to: "/recommendations", label: "Recommendations" },
   { to: "/profile", label: "Profile" },
+  { to: "/chats", label: "Chats" },
   { to: "/pending", label: "Pending" },
   { to: "/requests", label: "Requests" },
   { to: "/connections", label: "Connections" },
