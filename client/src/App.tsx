@@ -4,17 +4,45 @@ import Recommendations from "./pages/Recommendations";
 import Requests from "./pages/Requests";
 import Connections from "./pages/Connections";
 import Pending from "./pages/Pending";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import "./App.css";
 
 export default function App() {
+  // Simple auth check based on stored token.
+  const isAuthed = Boolean(localStorage.getItem("auth_token"));
+
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Navigate to="/recommendations" replace />} />
-        <Route path="/recommendations" element={<Recommendations />} />
-        <Route path="/pending" element={<Pending />} />
-        <Route path="/requests" element={<Requests />} />
-        <Route path="/connections" element={<Connections />} />
+        <Route
+          path="/"
+          element={
+            isAuthed ? (
+              <Navigate to="/recommendations" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/recommendations"
+          element={isAuthed ? <Recommendations /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/pending"
+          element={isAuthed ? <Pending /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/requests"
+          element={isAuthed ? <Requests /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/connections"
+          element={isAuthed ? <Connections /> : <Navigate to="/login" replace />}
+        />
         <Route path="*" element={<Navigate to="/recommendations" replace />} />
       </Route>
     </Routes>

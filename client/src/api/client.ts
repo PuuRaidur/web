@@ -92,3 +92,17 @@ export async function dismissConnectionRequest(senderId: number) {
 export async function cancelConnectionRequest(receiverId: number) {
   return apiPost("/connections/cancel", { receiverId });
 }
+
+export async function login(email: string, password: string) {
+  return apiFetch<{ token: string }>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function register(email: string, password: string) {
+  return apiFetch<{ token: string }>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}

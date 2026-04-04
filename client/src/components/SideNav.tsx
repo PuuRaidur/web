@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const links = [
   { to: "/recommendations", label: "Recommendations" },
@@ -8,6 +8,14 @@ const links = [
 ];
 
 export default function SideNav() {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    // Remove stored auth token and redirect to login.
+    localStorage.removeItem("auth_token");
+    navigate("/login");
+  }
+
   return (
     <aside className="side-nav">
       <div className="brand">
@@ -31,7 +39,7 @@ export default function SideNav() {
         ))}
       </nav>
       <div className="nav-footer">
-        <button className="ghost-button" type="button">
+        <button className="ghost-button" type="button" onClick={handleLogout}>
           Log out
         </button>
       </div>
