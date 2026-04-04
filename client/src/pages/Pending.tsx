@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchConnections, fetchUserSummary } from "../api/client";
+import { fetchOutgoingConnectionRequests, fetchUserSummary } from "../api/client";
 import type { UserSummary } from "../api/types";
 
-export default function Connections() {
+export default function Pending() {
   const [items, setItems] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,8 +12,8 @@ export default function Connections() {
 
     async function load() {
       try {
-        // Fetch connection ids.
-        const { ids } = await fetchConnections();
+        // Fetch outgoing request ids.
+        const { ids } = await fetchOutgoingConnectionRequests();
         // Fetch user summary data for each id.
         const summaries = await Promise.all(ids.map(fetchUserSummary));
         if (isActive) {
@@ -39,44 +39,27 @@ export default function Connections() {
 
   return (
     <section className="page">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">Your Network</p>
-          <h1>Connections</h1>
-          <p className="subtitle">
-            Keep track of everyone you have matched with and keep the
-            conversation going.
-          </p>
-        </div>
-        <button className="primary-button" type="button">
-          New chat
-        </button>
-      </header>
+      <div className="page-head">
+        <h1>Pending Requests</h1>
+        <p>People you have requested to connect with.</p>
+      </div>
 
-      {loading && <p className="muted">Loading connections…</p>}
+      {loading && <p className="muted">Loading pending requests…</p>}
       {error && <p className="muted">{error}</p>}
 
       {!loading && !error && items.length === 0 && (
-        <p className="muted">No connections yet.</p>
+        <p className="muted">No pending requests right now.</p>
       )}
 
-      <div className="card-grid">
+      <div className="card-stack">
         {items.map((item) => (
-          <article className="connection-card" key={item.id}>
+          <article className="request-card" key={item.id}>
             <div className="avatar">
               {item.name?.slice(0, 2).toUpperCase() ?? "MM"}
             </div>
-            <div>
+            <div className="profile-meta">
               <h3>{item.name ?? `User ${item.id}`}</h3>
-              <p className="muted">Ready to chat</p>
-            </div>
-            <div className="connection-actions">
-              <button className="ghost-button" type="button">
-                Message
-              </button>
-              <button className="danger-button" type="button">
-                Disconnect
-              </button>
+              <p>Awaiting response</p>
             </div>
           </article>
         ))}

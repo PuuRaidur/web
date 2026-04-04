@@ -1,0 +1,90 @@
+import type {
+  ConnectionRequestResponse,
+  ConnectionResponse,
+  MeResponse,
+  RecommendationResponse,
+  UserSummary,
+} from "./types";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+
+function getToken() {
+  return localStorage.getItem("auth_token");
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
+  const headers = new Headers(init?.headers);
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  if (!headers.has("Content-Type") && init?.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed: ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+async function apiPost(path: string, body?: unknown) {
+  await apiFetch<void>(path, {
+    method: "POST",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+export async function fetchRecommendations() {
+  return apiFetch<RecommendationResponse>("/recommendations");
+}
+
+export async function fetchConnectionRequests() {
+  return apiFetch<ConnectionRequestResponse>("/connections/requests");
+}
+
+export async function fetchOutgoingConnectionRequests() {
+  return apiFetch<ConnectionRequestResponse>("/connections/requests/outgoing");
+}
+
+export async function fetchConnections() {
+  return apiFetch<ConnectionResponse>("/connections");
+}
+
+export async function fetchUserSummary(id: number) {
+  return apiFetch<UserSummary>(`/users/${id}`);
+}
+
+export async function fetchMe() {
+  return apiFetch<MeResponse>("/me");
+}
+
+export async function sendConnectionRequest(receiverId: number) {
+  return apiPost("/connections/request", { receiverId });
+}
+
+export async function acceptConnectionRequest(senderId: number) {
+  return apiPost("/connections/accept", { senderId });
+}
+
+export async function dismissConnectionRequest(senderId: number) {
+  return apiPost("/connections/dismiss", { senderId });
+}

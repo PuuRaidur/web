@@ -16,6 +16,8 @@ pnpm-debug.log*
 
 # Dependencies
 node_modules/
+.vite/
+client/.vite/
 
 # Build output
 dist/
@@ -36,4 +38,3 @@ server/target/
 server/.mvn/wrapper/maven-wrapper.jar
 
 server/uploads/
-
