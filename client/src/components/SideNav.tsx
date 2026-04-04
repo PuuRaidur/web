@@ -9,7 +9,11 @@ const links = [
   { to: "/connections", label: "Connections" },
 ];
 
-export default function SideNav() {
+type SideNavProps = {
+  unreadCount?: number;
+};
+
+export default function SideNav({ unreadCount = 0 }: SideNavProps) {
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -36,7 +40,10 @@ export default function SideNav() {
               `nav-link ${isActive ? "nav-link-active" : ""}`
             }
           >
-            {link.label}
+            <span>{link.label}</span>
+            {link.to === "/chats" && unreadCount > 0 && (
+              <span className="nav-badge">{unreadCount}</span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   fetchChatMessages,
@@ -9,6 +9,18 @@ import {
 } from "../api/client";
 import type { ChatListItem, ChatMessage, UserSummary } from "../api/types";
 import Avatar from "../components/Avatar";
+import { addChatListener, connectChatSocket } from "../realtime/chatSocket";
+
+function formatTimestamp(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
 
 export default function Chats() {
   const [searchParams] = useSearchParams();
@@ -27,46 +39,32 @@ export default function Chats() {
     [chats, selectedChatId]
   );
 
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadChats() {
-      try {
-        setLoading(true);
-        const data = await fetchChats();
-        if (!isActive) return;
-        setChats(data);
-        if (data.length > 0 && selectedChatId === null) {
-          setSelectedChatId(data[0].chatId);
-        }
-
-        // Load user summary info for chat list.
-        const uniqueUserIds = Array.from(new Set(data.map((c) => c.otherUserId)));
-        const summaries = await Promise.all(uniqueUserIds.map(fetchUserSummary));
-        const map: Record<number, UserSummary> = {};
-        summaries.forEach((summary) => {
-          map[summary.id] = summary;
-        });
-        if (isActive) {
-          setParticipants(map);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err instanceof Error ? err.message : "Failed to load chats");
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
+  const refreshChats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchChats();
+      setChats(data);
+      if (data.length > 0 && selectedChatId === null) {
+        setSelectedChatId(data[0].chatId);
       }
+
+      const uniqueUserIds = Array.from(new Set(data.map((c) => c.otherUserId)));
+      const summaries = await Promise.all(uniqueUserIds.map(fetchUserSummary));
+      const map: Record<number, UserSummary> = {};
+      summaries.forEach((summary) => {
+        map[summary.id] = summary;
+      });
+      setParticipants(map);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load chats");
+    } finally {
+      setLoading(false);
     }
+  }, [selectedChatId]);
 
-    loadChats();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  useEffect(() => {
+    refreshChats();
+  }, [refreshChats]);
 
   useEffect(() => {
     const requestedChatId = searchParams.get("chatId");
@@ -103,6 +101,31 @@ export default function Chats() {
       isActive = false;
     };
   }, [selectedChatId]);
+
+  useEffect(() => {
+    connectChatSocket();
+    const unsubscribe = addChatListener((event) => {
+      if (event.type === "message" && event.message) {
+        if (event.chatId === selectedChatId) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === event.message!.id)) {
+              return prev;
+            }
+            return [event.message!, ...prev];
+          });
+        }
+        refreshChats();
+      }
+
+      if (event.type === "read") {
+        refreshChats();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [refreshChats, selectedChatId]);
 
   async function handleSend() {
     if (!selectedChatId || !draft.trim()) return;
@@ -154,9 +177,16 @@ export default function Chats() {
                     {chat.lastMessage ?? "No messages yet"}
                   </div>
                 </div>
-                {chat.unreadCount > 0 && (
-                  <span className="chat-badge">{chat.unreadCount}</span>
-                )}
+                <div className="chat-list-side">
+                  {chat.lastMessageAt && (
+                    <span className="chat-list-time">
+                      {formatTimestamp(chat.lastMessageAt)}
+                    </span>
+                  )}
+                  {chat.unreadCount > 0 && (
+                    <span className="chat-badge">{chat.unreadCount}</span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -180,7 +210,9 @@ export default function Chats() {
                   messages.map((message) => (
                     <div className="chat-message" key={message.id}>
                       <p>{message.content}</p>
-                      <span className="muted">{message.createdAt}</span>
+                      <span className="muted">
+                        {formatTimestamp(message.createdAt)}
+                      </span>
                     </div>
                   ))
                 )}

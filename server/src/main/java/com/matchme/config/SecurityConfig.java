@@ -39,7 +39,7 @@ public class SecurityConfig {
                         // Allow preflight requests
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         // Allows /auth/** without login.
-                        .requestMatchers("/auth/**","/error", "/uploads/**").permitAll()
+                        .requestMatchers("/auth/**","/error", "/uploads/**", "/ws/**").permitAll()
                         // Everything else needs JWT.
                         .anyRequest().authenticated()
                 )
