@@ -10,18 +10,21 @@ type AvatarProps = {
   url?: string | null;
   size?: number;
   className?: string;
+  status?: "online" | "offline";
 };
 
-export default function Avatar({ name, url, size, className }: AvatarProps) {
+export default function Avatar({ name, url, size, className, status }: AvatarProps) {
   const displayUrl = url
     ? url.startsWith("/")
       ? `${API_BASE}${url}`
       : url
     : null;
 
+  const statusClass = status ? ` avatar-${status}` : "";
+
   return (
     <div
-      className={"avatar" + (className ? ` ${className}` : "")}
+      className={"avatar" + statusClass + (className ? ` ${className}` : "")}
       style={size ? { width: size, height: size } : undefined}
     >
       {displayUrl ? (

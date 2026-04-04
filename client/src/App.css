@@ -172,6 +172,7 @@
   place-items: center;
   font-weight: 600;
   color: var(--ink);
+  position: relative;
 }
 
 .avatar img {
@@ -180,6 +181,26 @@
   border-radius: inherit;
   object-fit: cover;
   display: block;
+}
+
+.avatar-online::after,
+.avatar-offline::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid var(--surface-soft);
+}
+
+.avatar-online::after {
+  background: #3bd671;
+}
+
+.avatar-offline::after {
+  background: #a7a7a7;
 }
 
 .profile-actions,
@@ -461,6 +482,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.chat-panel-title {
+  display: grid;
+  gap: 4px;
 }
 
 .chat-messages {

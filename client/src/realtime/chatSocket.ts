@@ -4,13 +4,22 @@ import type { ChatMessage } from "../api/types";
 import { API_BASE } from "../api/client";
 
 export type ChatEvent = {
-  type: "message" | "read";
+  type: "message" | "read" | "typing";
   chatId: number;
+  senderId?: number | null;
+  isTyping?: boolean | null;
   message?: ChatMessage | null;
 };
 
+export type PresenceEvent = {
+  type: "presence";
+  userId: number;
+  online: boolean;
+};
+
 let client: Client | null = null;
-const listeners = new Set<(event: ChatEvent) => void>();
+const chatListeners = new Set<(event: ChatEvent) => void>();
+const presenceListeners = new Set<(event: PresenceEvent) => void>();
 
 function getWsUrl() {
   return `${API_BASE}/ws`;
@@ -32,9 +41,18 @@ export function connectChatSocket() {
       client?.subscribe("/user/queue/chat-updates", (message) => {
         try {
           const payload = JSON.parse(message.body) as ChatEvent;
-          listeners.forEach((listener) => listener(payload));
+          chatListeners.forEach((listener) => listener(payload));
         } catch (err) {
           console.warn("Failed to parse chat event", err);
+        }
+      });
+
+      client?.subscribe("/topic/presence", (message) => {
+        try {
+          const payload = JSON.parse(message.body) as PresenceEvent;
+          presenceListeners.forEach((listener) => listener(payload));
+        } catch (err) {
+          console.warn("Failed to parse presence event", err);
         }
       });
     },
@@ -44,13 +62,27 @@ export function connectChatSocket() {
 }
 
 export function addChatListener(listener: (event: ChatEvent) => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  chatListeners.add(listener);
+  return () => chatListeners.delete(listener);
+}
+
+export function addPresenceListener(listener: (event: PresenceEvent) => void) {
+  presenceListeners.add(listener);
+  return () => presenceListeners.delete(listener);
+}
+
+export function sendTyping(chatId: number, isTyping: boolean) {
+  if (!client || !client.active) return;
+  client.publish({
+    destination: "/app/chat.typing",
+    body: JSON.stringify({ chatId, isTyping }),
+  });
 }
 
 export function disconnectChatSocket() {
   if (!client) return;
   client.deactivate();
   client = null;
-  listeners.clear();
+  chatListeners.clear();
+  presenceListeners.clear();
 }

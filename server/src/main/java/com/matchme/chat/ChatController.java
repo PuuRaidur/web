@@ -155,12 +155,12 @@ public class ChatController {
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(userId),
                 "/queue/chat-updates",
-                new ChatEvent("message", chatId, response)
+                new ChatEvent("message", chatId, userId, null, response)
         );
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(otherUserId),
                 "/queue/chat-updates",
-                new ChatEvent("message", chatId, response)
+                new ChatEvent("message", chatId, userId, null, response)
         );
 
         return ResponseEntity.ok(response);
@@ -251,7 +251,7 @@ public class ChatController {
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(userId),
                 "/queue/chat-updates",
-                new ChatEvent("read", chatId, null)
+                new ChatEvent("read", chatId, userId, null, null)
         );
 
         return ResponseEntity.ok().build();

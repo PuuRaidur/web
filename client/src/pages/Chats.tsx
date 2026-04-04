@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   fetchChatMessages,
@@ -9,7 +9,12 @@ import {
 } from "../api/client";
 import type { ChatListItem, ChatMessage, UserSummary } from "../api/types";
 import Avatar from "../components/Avatar";
-import { addChatListener, connectChatSocket } from "../realtime/chatSocket";
+import {
+  addChatListener,
+  addPresenceListener,
+  connectChatSocket,
+  sendTyping,
+} from "../realtime/chatSocket";
 
 function formatTimestamp(value: string | null) {
   if (!value) return "";
@@ -30,9 +35,12 @@ export default function Chats() {
   const [participants, setParticipants] = useState<Record<number, UserSummary>>(
     {}
   );
+  const [presence, setPresence] = useState<Record<number, boolean>>({});
+  const [typing, setTyping] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedChat = useMemo(
     () => chats.find((chat) => chat.chatId === selectedChatId) ?? null,
@@ -117,13 +125,30 @@ export default function Chats() {
         refreshChats();
       }
 
+      if (event.type === "typing") {
+        if (!event.senderId) return;
+        if (event.chatId !== selectedChatId) return;
+        setTyping((prev) => ({
+          ...prev,
+          [event.chatId]: Boolean(event.isTyping),
+        }));
+      }
+
       if (event.type === "read") {
         refreshChats();
       }
     });
 
+    const unsubscribePresence = addPresenceListener((event) => {
+      setPresence((prev) => ({
+        ...prev,
+        [event.userId]: event.online,
+      }));
+    });
+
     return () => {
       unsubscribe();
+      unsubscribePresence();
     };
   }, [refreshChats, selectedChatId]);
 
@@ -134,9 +159,22 @@ export default function Chats() {
       const newMessage = await sendChatMessage(selectedChatId, draft.trim());
       setMessages((prev) => [newMessage, ...prev]);
       setDraft("");
+      sendTyping(selectedChatId, false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
     }
+  }
+
+  function handleDraftChange(nextValue: string) {
+    setDraft(nextValue);
+    if (!selectedChatId) return;
+    sendTyping(selectedChatId, true);
+    if (typingTimer.current) {
+      clearTimeout(typingTimer.current);
+    }
+    typingTimer.current = setTimeout(() => {
+      sendTyping(selectedChatId, false);
+    }, 1500);
   }
 
   return (
@@ -168,7 +206,13 @@ export default function Chats() {
                 }`}
                 onClick={() => setSelectedChatId(chat.chatId)}
               >
-                <Avatar name={user?.name} url={user?.profilePictureUrl} />
+                <Avatar
+                  name={user?.name}
+                  url={user?.profilePictureUrl}
+                  status={
+                    presence[chat.otherUserId] ? "online" : "offline"
+                  }
+                />
                 <div className="chat-list-meta">
                   <div className="chat-list-title">
                     {user?.name ?? `User ${chat.otherUserId}`}
@@ -196,10 +240,16 @@ export default function Chats() {
           {selectedChat ? (
             <>
               <div className="chat-panel-header">
-                <h2>
-                  {participants[selectedChat.otherUserId]?.name ??
-                    `User ${selectedChat.otherUserId}`}
-                </h2>
+                <div className="chat-panel-title">
+                  <h2>
+                    {participants[selectedChat.otherUserId]?.name ??
+                      `User ${selectedChat.otherUserId}`}
+                  </h2>
+                  <span className="muted">
+                    {presence[selectedChat.otherUserId] ? "Online" : "Offline"}
+                    {typing[selectedChat.chatId] ? " · Typing…" : ""}
+                  </span>
+                </div>
                 <span className="muted">Chat ID {selectedChat.chatId}</span>
               </div>
 
@@ -222,7 +272,7 @@ export default function Chats() {
                 <input
                   type="text"
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
+                  onChange={(event) => handleDraftChange(event.target.value)}
                   placeholder="Write a message…"
                 />
                 <button className="primary-button" type="button" onClick={handleSend}>
