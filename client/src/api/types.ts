@@ -6,8 +6,9 @@ export type ConnectionRequestResponse = {
   ids: number[];
 };
 
-export type ConnectionResponse = {
-  ids: number[];
+export type ConnectionDetail = {
+  connectionId: number;
+  otherUserId: number;
 };
 
 export type UserSummary = {
