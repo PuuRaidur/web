@@ -172,7 +172,7 @@ DELETE /connections/{id}
 
 ---
 
-# Phase 11 – Frontend Screens
+# Phase 11 – Frontend Screens (done, but not tested)
 
 Implement UI for these features.
 
