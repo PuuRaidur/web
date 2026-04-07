@@ -1,5 +1,7 @@
 package com.matchme.connection;
 
+import com.matchme.connection.dto.ConnectionDetail;
+import com.matchme.connection.dto.ConnectionRequestDetail;
 import com.matchme.connection.dto.ConnectionRequestResponse;
 import com.matchme.connection.dto.ConnectionsResponse;
 import org.springframework.http.ResponseEntity;
@@ -53,16 +55,16 @@ public class ConnectionController {
 
     // Phase 7: View incoming requests
     @GetMapping("/connections/requests")
-    public ResponseEntity<ConnectionsResponse> getIncomingRequests(Authentication authentication) {
+    public ResponseEntity<List<ConnectionRequestDetail>> getIncomingRequests(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
 
-        List<Long> requesterIds = connectionRequestRepository.findIncomingRequests(currentUserId)
+        List<ConnectionRequestDetail> requests = connectionRequestRepository.findIncomingRequests(currentUserId)
                 .stream()
                 .sorted(Comparator.comparing(ConnectionRequest::getCreatedAt).reversed())
-                .map(ConnectionRequest::getSenderId)
+                .map(r -> new ConnectionRequestDetail(r.getId(), r.getSenderId(), r.getCreatedAt()))
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new ConnectionsResponse(requesterIds));
+        return ResponseEntity.ok(requests);
     }
 
     // Phase 8: Accept a connection request
@@ -122,23 +124,22 @@ public class ConnectionController {
 
     // Phase 9: Get connected users
     @GetMapping("/connections")
-    public ResponseEntity<ConnectionsResponse> getConnections(Authentication authentication) {
+    public ResponseEntity<List<ConnectionDetail>> getConnections(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
 
         List<Connection> connections = connectionRepository.findByUserId(currentUserId);
 
-        // Extract the other user's ID from each connection
-        List<Long> connectedUserIds = connections.stream()
+        // Extract the other user's ID and connection ID from each connection
+        List<ConnectionDetail> details = connections.stream()
                 .map(connection -> {
-                    if (connection.getUser1Id().equals(currentUserId)) {
-                        return connection.getUser2Id();
-                    } else {
-                        return connection.getUser1Id();
-                    }
+                    Long otherId = connection.getUser1Id().equals(currentUserId)
+                            ? connection.getUser2Id()
+                            : connection.getUser1Id();
+                    return new ConnectionDetail(connection.getId(), otherId);
                 })
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new ConnectionsResponse(connectedUserIds));
+        return ResponseEntity.ok(details);
     }
 
     // Phase 10: Disconnect from a user
