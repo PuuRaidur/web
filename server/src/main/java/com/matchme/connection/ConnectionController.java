@@ -1,12 +1,15 @@
 package com.matchme.connection;
 
-import com.matchme.connection.dto.ConnectionDetail;
-import com.matchme.connection.dto.ConnectionRequestDetail;
+import com.matchme.connection.dto.ConnectionRequestAction;
+import com.matchme.connection.dto.ConnectionRequestCreate;
 import com.matchme.connection.dto.ConnectionRequestResponse;
+import com.matchme.connection.dto.ConnectionRequestsResponse;
 import com.matchme.connection.dto.ConnectionsResponse;
+import com.matchme.common.ProfileCompletionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -17,21 +20,26 @@ public class ConnectionController {
 
     private final ConnectionRepository connectionRepository;
     private final ConnectionRequestRepository connectionRequestRepository;
+    private final ProfileCompletionService profileCompletionService;
 
     public ConnectionController(ConnectionRepository connectionRepository,
-                                ConnectionRequestRepository connectionRequestRepository) {
+                                ConnectionRequestRepository connectionRequestRepository,
+                                ProfileCompletionService profileCompletionService) {
         this.connectionRepository = connectionRepository;
         this.connectionRequestRepository = connectionRequestRepository;
+        this.profileCompletionService = profileCompletionService;
     }
 
-    // Phase 6: Send a connection request
+    // Send a connection request
     @PostMapping("/connections/request")
     public ResponseEntity<ConnectionRequestResponse> sendConnectionRequest(Authentication authentication,
-                                                                            @RequestParam Long receiverId) {
+                                                                            @RequestBody ConnectionRequestCreate request) {
         Long senderId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(senderId);
+        Long receiverId = request.receiverId;
 
         // Prevent sending request to yourself
-        if (senderId.equals(receiverId)) {
+        if (receiverId == null || senderId.equals(receiverId)) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -45,101 +53,158 @@ public class ConnectionController {
             return ResponseEntity.status(409).build(); // Conflict
         }
 
-        ConnectionRequest request = new ConnectionRequest();
-        request.setSenderId(senderId);
-        request.setReceiverId(receiverId);
-        ConnectionRequest saved = connectionRequestRepository.save(request);
+        ConnectionRequest newRequest = new ConnectionRequest();
+        newRequest.setSenderId(senderId);
+        newRequest.setReceiverId(receiverId);
+        ConnectionRequest saved = connectionRequestRepository.save(newRequest);
 
         return ResponseEntity.ok(new ConnectionRequestResponse(saved.getId()));
     }
 
-    // Phase 7: View incoming requests
+    // View incoming requests
     @GetMapping("/connections/requests")
-    public ResponseEntity<List<ConnectionRequestDetail>> getIncomingRequests(Authentication authentication) {
+    public ResponseEntity<ConnectionRequestsResponse> getIncomingRequests(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
-        List<ConnectionRequestDetail> requests = connectionRequestRepository.findIncomingRequests(currentUserId)
+        List<Long> requesterIds = connectionRequestRepository.findIncomingRequests(currentUserId)
                 .stream()
                 .sorted(Comparator.comparing(ConnectionRequest::getCreatedAt).reversed())
-                .map(r -> new ConnectionRequestDetail(r.getId(), r.getSenderId(), r.getCreatedAt()))
+                .map(ConnectionRequest::getSenderId)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(requests);
+        return ResponseEntity.ok(new ConnectionRequestsResponse(requesterIds));
     }
 
-    // Phase 8: Accept a connection request
-    @PostMapping("/connections/accept")
-    public ResponseEntity<Void> acceptConnectionRequest(Authentication authentication,
-                                                         @RequestParam Long requestId) {
+    // View outgoing requests
+    @GetMapping("/connections/requests/outgoing")
+    public ResponseEntity<ConnectionRequestsResponse> getOutgoingRequests(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
-        ConnectionRequest request = connectionRequestRepository.findById(requestId).orElse(null);
-        if (request == null) {
+        List<Long> receiverIds = connectionRequestRepository.findOutgoingRequests(currentUserId)
+                .stream()
+                .sorted(Comparator.comparing(ConnectionRequest::getCreatedAt).reversed())
+                .map(ConnectionRequest::getReceiverId)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new ConnectionRequestsResponse(receiverIds));
+    }
+
+    // Accept a connection request
+    @PostMapping("/connections/accept")
+    @Transactional
+    public ResponseEntity<Void> acceptConnectionRequest(Authentication authentication,
+                                                         @RequestBody ConnectionRequestAction request) {
+        Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
+
+        if (request == null || request.senderId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ConnectionRequest existing = connectionRequestRepository
+                .findBySenderIdAndReceiverId(request.senderId, currentUserId)
+                .orElse(null);
+        if (existing == null) {
             return ResponseEntity.notFound().build();
         }
 
         // Only the receiver can accept
-        if (!request.getReceiverId().equals(currentUserId)) {
+        if (!existing.getReceiverId().equals(currentUserId)) {
             return ResponseEntity.status(403).build(); // Forbidden
         }
 
         // Create the connection (ensure user1Id < user2Id for consistency)
         Connection connection = new Connection();
-        if (request.getSenderId() < request.getReceiverId()) {
-            connection.setUser1Id(request.getSenderId());
-            connection.setUser2Id(request.getReceiverId());
+        if (existing.getSenderId() < existing.getReceiverId()) {
+            connection.setUser1Id(existing.getSenderId());
+            connection.setUser2Id(existing.getReceiverId());
         } else {
-            connection.setUser1Id(request.getReceiverId());
-            connection.setUser2Id(request.getSenderId());
+            connection.setUser1Id(existing.getReceiverId());
+            connection.setUser2Id(existing.getSenderId());
         }
         connectionRepository.save(connection);
 
         // Delete the request
-        connectionRequestRepository.delete(request);
+        connectionRequestRepository.delete(existing);
 
         return ResponseEntity.ok().build();
     }
 
-    // Phase 8: Dismiss a connection request
+    // Dismiss a connection request
     @PostMapping("/connections/dismiss")
+    @Transactional
     public ResponseEntity<Void> dismissConnectionRequest(Authentication authentication,
-                                                          @RequestParam Long requestId) {
+                                                          @RequestBody ConnectionRequestAction request) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
-        ConnectionRequest request = connectionRequestRepository.findById(requestId).orElse(null);
-        if (request == null) {
+        if (request == null || request.senderId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ConnectionRequest existing = connectionRequestRepository
+                .findBySenderIdAndReceiverId(request.senderId, currentUserId)
+                .orElse(null);
+        if (existing == null) {
             return ResponseEntity.notFound().build();
         }
 
         // Only the receiver can dismiss
-        if (!request.getReceiverId().equals(currentUserId)) {
+        if (!existing.getReceiverId().equals(currentUserId)) {
             return ResponseEntity.status(403).build(); // Forbidden
         }
 
         // Delete the request
-        connectionRequestRepository.delete(request);
+        connectionRequestRepository.delete(existing);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // Cancel an outgoing connection request
+    @PostMapping("/connections/cancel")
+    @Transactional
+    public ResponseEntity<Void> cancelConnectionRequest(Authentication authentication,
+                                                         @RequestBody ConnectionRequestCreate request) {
+        Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
+        if (request == null || request.receiverId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        ConnectionRequest existing = connectionRequestRepository
+                .findBySenderIdAndReceiverId(currentUserId, request.receiverId)
+                .orElse(null);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        connectionRequestRepository.delete(existing);
 
         return ResponseEntity.ok().build();
     }
 
     // Phase 9: Get connected users
     @GetMapping("/connections")
-    public ResponseEntity<List<ConnectionDetail>> getConnections(Authentication authentication) {
+    public ResponseEntity<ConnectionsResponse> getConnections(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         List<Connection> connections = connectionRepository.findByUserId(currentUserId);
 
-        // Extract the other user's ID and connection ID from each connection
-        List<ConnectionDetail> details = connections.stream()
+        // Extract the other user's ID from each connection
+        List<Long> connectedUserIds = connections.stream()
                 .map(connection -> {
-                    Long otherId = connection.getUser1Id().equals(currentUserId)
-                            ? connection.getUser2Id()
-                            : connection.getUser1Id();
-                    return new ConnectionDetail(connection.getId(), otherId);
+                    if (connection.getUser1Id().equals(currentUserId)) {
+                        return connection.getUser2Id();
+                    } else {
+                        return connection.getUser1Id();
+                    }
                 })
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(details);
+        return ResponseEntity.ok(new ConnectionsResponse(connectedUserIds));
     }
 
     // Phase 10: Disconnect from a user
@@ -147,6 +212,7 @@ public class ConnectionController {
     public ResponseEntity<Void> disconnect(Authentication authentication,
                                             @PathVariable Long connectionId) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         Connection connection = connectionRepository.findById(connectionId).orElse(null);
         if (connection == null) {

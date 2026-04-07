@@ -40,7 +40,7 @@ public class ProfileCompletionService {
     // throws if user profile/bio is incomplete (use this in controllers)
     public void requireComplete(Long userId) {
         if (!isProfileComplete(userId)) {
-            throw new IllegalStateException("Profile incomplete");
+            throw new ProfileIncompleteException("Profile incomplete");
         }
     }
 

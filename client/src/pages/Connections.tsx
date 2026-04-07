@@ -1,109 +1,105 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  getConnections,
-  getUserSummaries,
-  disconnect,
-  type ConnectionDetail,
-  type UserSummary,
-} from "../api";
-
-type ConnectionWithUser = ConnectionDetail & { user: UserSummary };
+  fetchConnections,
+  fetchUserSummary,
+  getOrCreateChat,
+} from "../api/client";
+import type { UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Connections() {
-  const [connections, setConnections] = useState<ConnectionWithUser[]>([]);
+  const navigate = useNavigate();
+  const [items, setItems] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [acting, setActing] = useState<number | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const conns = await getConnections();
-      if (conns.length === 0) {
-        setConnections([]);
-        return;
-      }
-      const summaries = await getUserSummaries(conns.map((c) => c.otherUserId));
-      const merged = conns.map((conn) => ({
-        ...conn,
-        user: summaries.find((s) => s.id === conn.otherUserId)!,
-      }));
-      setConnections(merged);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to load connections";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let isActive = true;
 
-  const handleDisconnect = async (connectionId: number) => {
-    setActing(connectionId);
-    try {
-      await disconnect(connectionId);
-      setConnections((prev) => prev.filter((c) => c.connectionId !== connectionId));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to disconnect";
-      setError(msg);
-    } finally {
-      setActing(null);
+    async function load() {
+      try {
+        // Fetch connection ids.
+        const { ids } = await fetchConnections();
+        // Fetch user summary data for each id.
+        const summaries = await Promise.all(ids.map(fetchUserSummary));
+        if (isActive) {
+          setItems(summaries);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : "Failed to load");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
     }
-  };
 
-  if (loading) return <p>Loading connections…</p>;
-  if (error) return <p className="error-text">{error}</p>;
-  if (connections.length === 0) return <p>No connections yet.</p>;
+    load();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  async function handleMessage(userId: number) {
+    try {
+      // Ensure the chat exists before navigating.
+      const { chatId } = await getOrCreateChat(userId);
+      navigate(`/chats?chatId=${chatId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to open chat");
+    }
+  }
 
   return (
     <section className="page">
-      <div className="page-head">
+      <header className="page-header">
         <div>
+          <p className="eyebrow">Your Network</p>
           <h1>Connections</h1>
-          <p className="subtitle">People you are connected with.</p>
+          <p className="subtitle">
+            Keep track of everyone you have matched with and keep the
+            conversation going.
+          </p>
         </div>
-      </div>
+        <button className="primary-button" type="button">
+          New chat
+        </button>
+      </header>
 
-      <ul className="user-list">
-        {connections.map((conn) => (
-          <li className="user-list-item" key={conn.connectionId}>
-            <div className="avatar">
-              {conn.user.profilePictureUrl ? (
-                <img src={conn.user.profilePictureUrl} alt={conn.user.name || "User"} />
-              ) : (
-                initials(conn.user.name)
-              )}
+      {loading && <p className="muted">Loading connections…</p>}
+      {error && <p className="muted">{error}</p>}
+
+      {!loading && !error && items.length === 0 && (
+        <p className="muted">No connections yet.</p>
+      )}
+
+      <div className="card-grid">
+        {items.map((item) => (
+          <article className="connection-card" key={item.id}>
+            <Avatar name={item.name} url={item.profilePictureUrl} />
+            <div>
+              <h3>{item.name ?? `User ${item.id}`}</h3>
+              <p className="muted">Ready to chat</p>
             </div>
-            <div className="user-info">
-              <h3>{conn.user.name || `User ${conn.user.id}`}</h3>
-            </div>
-            <div className="user-actions">
+            <div className="connection-actions">
               <button
-                className="danger-button"
+                className="ghost-button"
                 type="button"
-                disabled={acting !== null}
-                onClick={() => handleDisconnect(conn.connectionId)}
+                onClick={() => handleMessage(item.id)}
               >
-                {acting === conn.connectionId ? "Disconnecting…" : "Disconnect"}
+                Message
+              </button>
+              <button className="danger-button" type="button">
+                Disconnect
               </button>
             </div>
-          </li>
+          </article>
         ))}
-      </ul>
+      </div>
     </section>
   );
-}
-
-function initials(name: string | null): string {
-  if (!name) return "??";
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
 }

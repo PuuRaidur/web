@@ -2,6 +2,7 @@ package com.matchme.bio;
 
 import com.matchme.bio.dto.BioRequest;
 import com.matchme.bio.dto.BioResponse;
+import com.matchme.common.RelationshipService;
 import com.matchme.user.User;
 import com.matchme.user.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +14,14 @@ public class BioController {
 
     private final BioRepository bioRepository;
     private final UserRepository userRepository;
+    private final RelationshipService relationshipService;
 
-    public BioController(BioRepository bioRepository, UserRepository userRepository) {
+    public BioController(BioRepository bioRepository,
+                         UserRepository userRepository,
+                         RelationshipService relationshipService) {
         this.bioRepository = bioRepository;
         this.userRepository = userRepository;
+        this.relationshipService = relationshipService;
     }
 
     // get current user's bio
@@ -63,9 +68,14 @@ public class BioController {
 
     // Public bio info for a given user id
     @GetMapping("/users/{id}/bio")
-    public ResponseEntity<BioResponse> getUserBio(@PathVariable Long id) {
+    public ResponseEntity<BioResponse> getUserBio(@PathVariable Long id,
+                                                  Authentication authentication) {
         // Verify user exists
         if (userRepository.findById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Long viewerId = (Long) authentication.getPrincipal();
+        if (!relationshipService.canViewProfile(viewerId, id)) {
             return ResponseEntity.notFound().build();
         }
 

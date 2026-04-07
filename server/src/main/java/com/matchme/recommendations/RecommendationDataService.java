@@ -34,10 +34,26 @@ public class RecommendationDataService {
 
     // load canditates with profile + bio data (excluding current user and dismissed users)
     public List<RecommendationCandidate> loadCanditates(Long currentUserId) {
-        // Get list of dismissed user IDs for this user
+        // Get list of dismissed user IDs for this user (who they dismissed)
         List<Long> dismissedUserIds = dismissedRecommendationRepository.findDismissedUserIdsByUserId(currentUserId);
+        // Get list of users who dismissed the current user (so we don't recommend them)
+        List<Long> dismissedByUserIds = dismissedRecommendationRepository.findUserIdsWhoDismissed(currentUserId);
 
-        return userRepository.findAllByIdNotAndIdNotIn(currentUserId, dismissedUserIds)
+        if (dismissedUserIds == null || dismissedUserIds.isEmpty()) {
+            dismissedUserIds = List.of();
+        }
+        if (dismissedByUserIds == null || dismissedByUserIds.isEmpty()) {
+            dismissedByUserIds = List.of();
+        }
+
+        List<Long> excludedIds = new java.util.ArrayList<>(dismissedUserIds);
+        excludedIds.addAll(dismissedByUserIds);
+
+        List<com.matchme.user.User> candidates = excludedIds.isEmpty()
+                ? userRepository.findAllByIdNot(currentUserId)
+                : userRepository.findAllByIdNotAndIdNotIn(currentUserId, excludedIds);
+
+        return candidates
                 .stream() // Starts streaming the list so we can transform it.
                 .map(user -> {
                     var profile = profileRepository.findByUserId(user.getId()).orElse(null);
@@ -80,6 +96,12 @@ public class RecommendationDataService {
                 .stream()
                 .limit(10)
                 .collect(Collectors.toList());
+    }
+
+    public boolean isCandidate(Long currentUserId, Long targetUserId) {
+        return loadCanditates(currentUserId)
+                .stream()
+                .anyMatch(candidate -> candidate.userId.equals(targetUserId));
     }
 
     /**

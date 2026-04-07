@@ -2,6 +2,7 @@ package com.matchme.recommendations;
 
 import com.matchme.recommendations.dto.RecommendationsResponse;
 import com.matchme.recommendations.RecommendationDataService;
+import com.matchme.common.ProfileCompletionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -14,17 +15,21 @@ public class RecommendationsController {
 
     private final RecommendationDataService recommendationDataService;
     private final DismissedRecommendationRepository dismissedRecommendationRepository;
+    private final ProfileCompletionService profileCompletionService;
 
     public RecommendationsController(RecommendationDataService recommendationDataService,
-                                     DismissedRecommendationRepository dismissedRecommendationRepository) {
+                                     DismissedRecommendationRepository dismissedRecommendationRepository,
+                                     ProfileCompletionService profileCompletionService) {
         this.recommendationDataService = recommendationDataService;
         this.dismissedRecommendationRepository = dismissedRecommendationRepository;
+        this.profileCompletionService = profileCompletionService;
     }
 
     // Get up to 10 recommended user IDs (excluding current user and dismissed users)
     @GetMapping("/recommendations")
     public ResponseEntity<RecommendationsResponse> getRecommendations(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
 
         // Get candidates sorted by matching score
         List<Long> recommendedIds = recommendationDataService.getRecommendedCandidates(currentUserId)

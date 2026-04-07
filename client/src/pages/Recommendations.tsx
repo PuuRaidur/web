@@ -1,128 +1,135 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
-  getRecommendations,
-  getUserSummaries,
+  fetchMe,
+  fetchOutgoingConnectionRequests,
+  fetchRecommendations,
+  fetchUserSummary,
   sendConnectionRequest,
-  dismissRecommendation,
-  type UserSummary,
-} from "../api";
+} from "../api/client";
+import type { UserSummary } from "../api/types";
+import Avatar from "../components/Avatar";
 
 export default function Recommendations() {
-  const [users, setUsers] = useState<UserSummary[]>([]);
+  const [items, setItems] = useState<UserSummary[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [acting, setActing] = useState<number | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const recs = await getRecommendations();
-      if (recs.ids.length === 0) {
-        setUsers([]);
-        return;
-      }
-      const summaries = await getUserSummaries(recs.ids);
-      setUsers(summaries);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to load recommendations";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
+    let isActive = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        // Load the current user to avoid self-requests.
+        const me = await fetchMe();
+        // Load outgoing requests so we do not recommend them again.
+        const outgoing = await fetchOutgoingConnectionRequests();
+        // Fetch recommendation ids first.
+        const { ids } = await fetchRecommendations();
+        if (ids.length === 0 && outgoing.ids.length > 0) {
+          setError("No recommendations yet. Complete your profile or try again later.");
+          setItems([]);
+          return;
+        }
+        // Filter out the current user if the backend still includes it.
+        const filteredIds = ids.filter(
+          (id) => id !== me.id && !outgoing.ids.includes(id)
+        );
+        // Fetch user summary data for each id.
+        const summaries = await Promise.all(filteredIds.map(fetchUserSummary));
+        if (isActive) {
+          setItems(summaries);
+          setCurrentUserId(me.id);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : "Failed to load");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    }
+
     load();
-  }, [load]);
 
-  const handleConnect = async (userId: number) => {
-    setActing(userId);
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  async function handleConnect(userId: number) {
+    if (currentUserId && userId === currentUserId) {
+      setError("You cannot connect to yourself.");
+      return;
+    }
+
     try {
+      // Send a connection request to the user.
       await sendConnectionRequest(userId);
-      // Remove from list after successful request
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to send request";
-      setError(msg);
-    } finally {
-      setActing(null);
+      // Refresh recommendations after success.
+      const me = await fetchMe();
+      const outgoing = await fetchOutgoingConnectionRequests();
+      const { ids } = await fetchRecommendations();
+      const filteredIds = ids.filter(
+        (id) => id !== me.id && !outgoing.ids.includes(id)
+      );
+      const summaries = await Promise.all(filteredIds.map(fetchUserSummary));
+      setItems(summaries);
+      setCurrentUserId(me.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to connect");
     }
-  };
+  }
 
-  const handleDismiss = async (userId: number) => {
-    setActing(userId);
-    try {
-      await dismissRecommendation(userId);
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to dismiss";
-      setError(msg);
-    } finally {
-      setActing(null);
-    }
-  };
-
-  if (loading) return <p>Loading recommendations…</p>;
-  if (error) return <p className="error-text">{error}</p>;
-  if (users.length === 0) return <p>No recommendations available right now.</p>;
+  function handleDismiss(userId: number) {
+    // For now we only hide it on the UI.
+    setItems((prev) => prev.filter((item) => item.id !== userId));
+  }
 
   return (
     <section className="page">
       <div className="page-head">
-        <div>
-          <h1>Recommendations</h1>
-          <p className="subtitle">Up to 10 people you might want to connect with.</p>
-        </div>
-        <button className="ghost-button" type="button" onClick={load}>
-          Refresh
-        </button>
+        <h1>Recommendations</h1>
+        <p>Top matches based on your bio and preferences.</p>
       </div>
 
-      <ul className="user-list">
-        {users.map((user) => (
-          <li className="user-list-item" key={user.id}>
-            <div className="avatar">
-              {user.profilePictureUrl ? (
-                <img src={user.profilePictureUrl} alt={user.name || "User"} />
-              ) : (
-                initials(user.name)
-              )}
+      {loading && <p className="muted">Loading recommendations…</p>}
+      {error && <p className="muted">{error}</p>}
+
+      {!loading && !error && items.length === 0 && (
+        <p className="muted">No recommendations yet.</p>
+      )}
+
+      <div className="card-grid">
+        {items.map((item) => (
+          <article className="profile-card" key={item.id}>
+            <Avatar name={item.name} url={item.profilePictureUrl} />
+            <div className="profile-meta">
+              <h3>{item.name ?? `User ${item.id}`}</h3>
+              <p>Open to connect · Ask for details</p>
             </div>
-            <div className="user-info">
-              <h3>{user.name || `User ${user.id}`}</h3>
-            </div>
-            <div className="user-actions">
+            <div className="profile-actions">
               <button
                 className="primary-button"
                 type="button"
-                disabled={acting !== null}
-                onClick={() => handleConnect(user.id)}
+                onClick={() => handleConnect(item.id)}
               >
-                {acting === user.id ? "Sending…" : "Connect"}
+                Connect
               </button>
               <button
                 className="ghost-button"
                 type="button"
-                disabled={acting !== null}
-                onClick={() => handleDismiss(user.id)}
+                onClick={() => handleDismiss(item.id)}
               >
                 Dismiss
               </button>
             </div>
-          </li>
+          </article>
         ))}
-      </ul>
+      </div>
     </section>
   );
-}
-
-function initials(name: string | null): string {
-  if (!name) return "??";
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
 }
