@@ -1,56 +1,72 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   fetchConnections,
   fetchUserSummary,
   getOrCreateChat,
+  disconnect,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
 import Avatar from "../components/Avatar";
 
+type ConnectionItem = {
+  connectionId: number;
+  user: UserSummary;
+};
+
 export default function Connections() {
   const navigate = useNavigate();
-  const [items, setItems] = useState<UserSummary[]>([]);
+  const [items, setItems] = useState<ConnectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actingOn, setActingOn] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const details = await fetchConnections();
+      if (details.length === 0) {
+        setItems([]);
+        return;
+      }
+      const summaries = await Promise.all(
+        details.map((d) => fetchUserSummary(d.otherUserId))
+      );
+      const merged: ConnectionItem[] = details.map((d, i) => ({
+        connectionId: d.connectionId,
+        user: summaries[i],
+      }));
+      setItems(merged);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let isActive = true;
-
-    async function load() {
-      try {
-        // Fetch connection ids.
-        const { ids } = await fetchConnections();
-        // Fetch user summary data for each id.
-        const summaries = await Promise.all(ids.map(fetchUserSummary));
-        if (isActive) {
-          setItems(summaries);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err instanceof Error ? err.message : "Failed to load");
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
-    }
-
     load();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  }, [load]);
 
   async function handleMessage(userId: number) {
     try {
-      // Ensure the chat exists before navigating.
       const { chatId } = await getOrCreateChat(userId);
       navigate(`/chats?chatId=${chatId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to open chat");
+    }
+  }
+
+  async function handleDisconnect(connectionId: number) {
+    setActingOn(connectionId);
+    try {
+      await disconnect(connectionId);
+      setItems((prev) => prev.filter((c) => c.connectionId !== connectionId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to disconnect");
+    } finally {
+      setActingOn(null);
     }
   }
 
@@ -61,45 +77,47 @@ export default function Connections() {
           <p className="eyebrow">Your Network</p>
           <h1>Connections</h1>
           <p className="subtitle">
-            Keep track of everyone you have matched with and keep the
-            conversation going.
+            Keep track of everyone you have matched with.
           </p>
         </div>
-        <button className="primary-button" type="button">
-          New chat
-        </button>
       </header>
 
       {loading && <p className="muted">Loading connections…</p>}
-      {error && <p className="muted">{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
       {!loading && !error && items.length === 0 && (
         <p className="muted">No connections yet.</p>
       )}
 
-      <div className="card-grid">
+      <ul className="user-list">
         {items.map((item) => (
-          <article className="connection-card" key={item.id}>
-            <Avatar name={item.name} url={item.profilePictureUrl} />
-            <div>
-              <h3>{item.name ?? `User ${item.id}`}</h3>
-              <p className="muted">Ready to chat</p>
+          <li className="user-list-item" key={item.connectionId}>
+            <Avatar name={item.user.name} url={item.user.profilePictureUrl} />
+            <div className="user-info">
+              <h3>{item.user.name ?? `User ${item.user.id}`}</h3>
             </div>
-            <div className="connection-actions">
+            <div className="user-actions">
               <button
                 className="ghost-button"
                 type="button"
-                onClick={() => handleMessage(item.id)}
+                onClick={() => handleMessage(item.user.id)}
               >
                 Message
               </button>
-              <button className="danger-button" type="button">
-                Disconnect
+              <button
+                className="danger-button"
+                type="button"
+                disabled={actingOn !== null}
+                onClick={() => handleDisconnect(item.connectionId)}
+              >
+                {actingOn === item.connectionId
+                  ? "Disconnecting…"
+                  : "Disconnect"}
               </button>
             </div>
-          </article>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
