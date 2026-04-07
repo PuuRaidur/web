@@ -5,7 +5,6 @@ import com.matchme.connection.dto.ConnectionRequestAction;
 import com.matchme.connection.dto.ConnectionRequestCreate;
 import com.matchme.connection.dto.ConnectionRequestResponse;
 import com.matchme.connection.dto.ConnectionRequestsResponse;
-import com.matchme.connection.dto.ConnectionsResponse;
 import com.matchme.common.ProfileCompletionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
