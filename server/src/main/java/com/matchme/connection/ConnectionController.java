@@ -1,5 +1,6 @@
 package com.matchme.connection;
 
+import com.matchme.connection.dto.ConnectionDetail;
 import com.matchme.connection.dto.ConnectionRequestAction;
 import com.matchme.connection.dto.ConnectionRequestCreate;
 import com.matchme.connection.dto.ConnectionRequestResponse;
@@ -185,26 +186,25 @@ public class ConnectionController {
         return ResponseEntity.ok().build();
     }
 
-    // Phase 9: Get connected users
+    // Get connected users with connection IDs for disconnecting
     @GetMapping("/connections")
-    public ResponseEntity<ConnectionsResponse> getConnections(Authentication authentication) {
+    public ResponseEntity<List<ConnectionDetail>> getConnections(Authentication authentication) {
         Long currentUserId = (Long) authentication.getPrincipal();
         profileCompletionService.requireComplete(currentUserId);
 
         List<Connection> connections = connectionRepository.findByUserId(currentUserId);
 
-        // Extract the other user's ID from each connection
-        List<Long> connectedUserIds = connections.stream()
+        // Extract the other user's ID and the connection entity ID
+        List<ConnectionDetail> details = connections.stream()
                 .map(connection -> {
-                    if (connection.getUser1Id().equals(currentUserId)) {
-                        return connection.getUser2Id();
-                    } else {
-                        return connection.getUser1Id();
-                    }
+                    Long otherId = connection.getUser1Id().equals(currentUserId)
+                            ? connection.getUser2Id()
+                            : connection.getUser1Id();
+                    return new ConnectionDetail(connection.getId(), otherId);
                 })
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new ConnectionsResponse(connectedUserIds));
+        return ResponseEntity.ok(details);
     }
 
     // Phase 10: Disconnect from a user
