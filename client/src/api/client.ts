@@ -1,6 +1,6 @@
 import type {
   ConnectionRequestResponse,
-  ConnectionResponse,
+  ConnectionDetail,
   MeResponse,
   ChatListItem,
   ChatMessage,
@@ -61,6 +61,10 @@ export async function fetchRecommendations() {
   return apiFetch<RecommendationResponse>("/recommendations");
 }
 
+export async function dismissRecommendation(userId: number) {
+  return apiFetch<void>(`/recommendations/dismiss/${userId}`, { method: "POST" });
+}
+
 export async function fetchConnectionRequests() {
   return apiFetch<ConnectionRequestResponse>("/connections/requests");
 }
@@ -70,7 +74,7 @@ export async function fetchOutgoingConnectionRequests() {
 }
 
 export async function fetchConnections() {
-  return apiFetch<ConnectionResponse>("/connections");
+  return apiFetch<ConnectionDetail[]>("/connections");
 }
 
 export async function fetchUserSummary(id: number) {
@@ -155,6 +159,10 @@ export async function dismissConnectionRequest(senderId: number) {
 
 export async function cancelConnectionRequest(receiverId: number) {
   return apiPost("/connections/cancel", { receiverId });
+}
+
+export async function disconnect(connectionId: number) {
+  return apiFetch<void>(`/connections/${connectionId}`, { method: "DELETE" });
 }
 
 export async function login(email: string, password: string) {
