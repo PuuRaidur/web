@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
+import java.util.Map;
 
 
 @RestController
@@ -28,6 +29,16 @@ public class ProfileController {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
     }
+
+    private static final Map<String, double[]> CITY_COORDINATES = Map.of(
+            "tallinn", new double[]{59.4370, 24.7536},
+            "tartu", new double[]{58.3776, 26.7290},
+            "riga", new double[]{56.9496, 24.1052},
+            "helsinki", new double[]{60.1699, 24.9384},
+            "vilnius", new double[]{54.6872, 25.2797},
+            "oslo", new double[]{59.9139, 10.7522},
+            "tokyo", new double[]{35.6762, 139.6503}
+    );
 
     // Get current user's profile
     @GetMapping("/me/profile")
@@ -64,6 +75,17 @@ public class ProfileController {
         profile.setAboutMe(request.aboutMe);
         profile.setProfilePictureUrl(request.profilePictureUrl);
         profile.setLocation(request.location);
+        profile.setPreferredDistanceKm(request.preferredDistanceKm);
+        if (request.latitude != null && request.longitude != null) {
+            profile.setLatitude(request.latitude);
+            profile.setLongitude(request.longitude);
+        } else if (request.location != null && !request.location.isBlank()) {
+            double[] coords = CITY_COORDINATES.get(request.location.trim().toLowerCase());
+            if (coords != null) {
+                profile.setLatitude(coords[0]);
+                profile.setLongitude(coords[1]);
+            }
+        }
         profile.setUpdatedAt(java.time.Instant.now());
 
         Profile saved = profileRepository.save(profile);
@@ -76,7 +98,10 @@ public class ProfileController {
                 profile.getDisplayName(),
                 profile.getAboutMe(),
                 profile.getProfilePictureUrl(),
-                profile.getLocation()
+                profile.getLocation(),
+                profile.getPreferredDistanceKm(),
+                profile.getLatitude(),
+                profile.getLongitude()
         );
     }
 

@@ -2,6 +2,7 @@ package com.matchme.recommendations;
 
 import com.matchme.bio.BioRepository;
 import com.matchme.profile.ProfileRepository;
+import com.matchme.profile.Profile;
 import com.matchme.recommendations.dto.RecommendationCandidate;
 import com.matchme.recommendations.matching.MatchingService;
 import com.matchme.user.UserRepository;
@@ -86,13 +87,15 @@ public class RecommendationDataService {
      */
     public List<RecommendationCandidate> getRecommendedCandidates(Long currentUserId) {
         List<RecommendationCandidate> allCandidates = loadCanditates(currentUserId);
+        Profile currentProfile = profileRepository.findByUserId(currentUserId).orElse(null);
+        List<RecommendationCandidate> filteredCandidates = filterByLocation(currentProfile, allCandidates);
 
         RecommendationCandidate currentUser = getCurrentUserCandidate(currentUserId);
         if (currentUser == null) {
-            return allCandidates.stream().limit(10).collect(Collectors.toList());
+            return filteredCandidates.stream().limit(10).collect(Collectors.toList());
         }
 
-        return matchingService.findBestMatches(currentUser, allCandidates)
+        return matchingService.findBestMatches(currentUser, filteredCandidates)
                 .stream()
                 .limit(10)
                 .collect(Collectors.toList());
@@ -132,5 +135,62 @@ public class RecommendationDataService {
                 bio.getInterests(),
                 bio.getLookingFor()
         );
+    }
+
+    private List<RecommendationCandidate> filterByLocation(Profile currentProfile,
+                                                           List<RecommendationCandidate> candidates) {
+        if (currentProfile == null) {
+            return candidates;
+        }
+
+        String location = currentProfile.getLocation();
+        Double lat = currentProfile.getLatitude();
+        Double lon = currentProfile.getLongitude();
+        Integer preferredDistance = currentProfile.getPreferredDistanceKm();
+        if (preferredDistance == null) {
+            preferredDistance = 50;
+        }
+
+        if (lat != null && lon != null) {
+            double finalPreferredDistance = preferredDistance;
+            String normalized = location != null ? location.trim().toLowerCase() : null;
+            return candidates.stream()
+                    .filter(candidate -> {
+                        if (candidate.latitude != null && candidate.longitude != null) {
+                            double distance = calculateHaversineDistance(lat, lon, candidate.latitude, candidate.longitude);
+                            return distance <= finalPreferredDistance;
+                        }
+                        if (normalized == null) {
+                            return false;
+                        }
+                        return candidate.location != null
+                                && candidate.location.trim().equalsIgnoreCase(normalized);
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        if (location != null && !location.isBlank()) {
+            String normalized = location.trim().toLowerCase();
+            return candidates.stream()
+                    .filter(candidate -> candidate.location != null
+                            && candidate.location.trim().equalsIgnoreCase(normalized))
+                    .collect(Collectors.toList());
+        }
+
+        return candidates;
+    }
+
+    private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371.0;
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

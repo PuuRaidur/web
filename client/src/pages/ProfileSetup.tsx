@@ -13,6 +13,7 @@ type ProfileForm = {
   displayName: string;
   aboutMe: string;
   location: string;
+  preferredDistanceKm: string;
 };
 
 type BioForm = {
@@ -29,6 +30,7 @@ export default function ProfileSetup() {
     displayName: "",
     aboutMe: "",
     location: "",
+    preferredDistanceKm: "",
   });
   const [bio, setBio] = useState<BioForm>({
     hobbies: "",
@@ -59,6 +61,10 @@ export default function ProfileSetup() {
             displayName: existingProfile.displayName ?? me.name ?? "",
             aboutMe: existingProfile.aboutMe ?? "",
             location: existingProfile.location ?? "",
+            preferredDistanceKm:
+              existingProfile.preferredDistanceKm != null
+                ? String(existingProfile.preferredDistanceKm)
+                : "",
           });
           setProfilePictureUrl(existingProfile.profilePictureUrl ?? null);
           setBio({
@@ -107,6 +113,10 @@ export default function ProfileSetup() {
     if (!profile.location.trim()) {
       nextFieldErrors.location = "Location is required.";
     }
+    if (!profile.preferredDistanceKm.trim()) {
+      nextFieldErrors.preferredDistanceKm =
+        "Preferred distance is required.";
+    }
     if (!bio.hobbies.trim()) {
       nextFieldErrors.hobbies = "Add at least one hobby.";
     }
@@ -136,6 +146,9 @@ export default function ProfileSetup() {
         aboutMe: profile.aboutMe,
         profilePictureUrl,
         location: profile.location,
+        preferredDistanceKm: profile.preferredDistanceKm
+          ? Number(profile.preferredDistanceKm)
+          : null,
       });
 
       // Save bio.
@@ -269,6 +282,22 @@ export default function ProfileSetup() {
             />
             {fieldErrors.location && (
               <span className="field-error">{fieldErrors.location}</span>
+            )}
+          </label>
+          <label className="form-field">
+            <span>Preferred distance (km)</span>
+            <input
+              type="number"
+              min="1"
+              value={profile.preferredDistanceKm}
+              onChange={(event) =>
+                handleProfileChange("preferredDistanceKm", event.target.value)
+              }
+            />
+            {fieldErrors.preferredDistanceKm && (
+              <span className="field-error">
+                {fieldErrors.preferredDistanceKm}
+              </span>
             )}
           </label>
         </div>

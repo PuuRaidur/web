@@ -14,6 +14,7 @@ export type UserSummary = {
   id: number;
   name: string | null;
   profilePictureUrl: string | null;
+  profileLink?: string | null;
 };
 
 export type MeResponse = {
@@ -28,6 +29,9 @@ export type ProfileResponse = {
   aboutMe: string | null;
   profilePictureUrl: string | null;
   location: string | null;
+  preferredDistanceKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type BioResponse = {

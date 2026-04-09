@@ -5,6 +5,7 @@ import com.matchme.chat.dto.ChatListItem;
 import com.matchme.chat.dto.ChatResponse;
 import com.matchme.chat.dto.MessageResponse;
 import com.matchme.chat.dto.SendMessageRequest;
+import com.matchme.connection.ConnectionRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -32,16 +33,19 @@ public class ChatController {
     private final MessageRepository messageRepository;
     private final ChatReadRepository chatReadRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ConnectionRepository connectionRepository;
 
 
     public ChatController(ChatRepository chatRepository,
                           MessageRepository messageRepository,
                           ChatReadRepository chatReadRepository,
-                          SimpMessagingTemplate messagingTemplate) {
+                          SimpMessagingTemplate messagingTemplate,
+                          ConnectionRepository connectionRepository) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.chatReadRepository = chatReadRepository;
         this.messagingTemplate = messagingTemplate;
+        this.connectionRepository = connectionRepository;
     }
 
 
@@ -63,6 +67,9 @@ public class ChatController {
 
         boolean isParticipant = chat.getUser1Id().equals(userId) || chat.getUser2Id().equals(userId);
         if (!isParticipant) {
+            return ResponseEntity.status(403).build();
+        }
+        if (!connectionRepository.existsBetweenUsers(chat.getUser1Id(), chat.getUser2Id())) {
             return ResponseEntity.status(403).build();
         }
 
@@ -88,6 +95,9 @@ public class ChatController {
             @RequestParam Long otherUserId
     ) {
         Long currentUserId = (Long) authentication.getPrincipal();
+        if (!connectionRepository.existsBetweenUsers(currentUserId, otherUserId)) {
+            return ResponseEntity.status(403).build();
+        }
 
         // Ensure we always store user1 < user2 to enforce uniqueness
         Long user1 = Math.min(currentUserId, otherUserId);
@@ -129,6 +139,9 @@ public class ChatController {
         // Ensure sender is in the chat
         boolean isParticipant = chat.getUser1Id().equals(userId) || chat.getUser2Id().equals(userId);
         if (!isParticipant) {
+            return ResponseEntity.status(403).build();
+        }
+        if (!connectionRepository.existsBetweenUsers(chat.getUser1Id(), chat.getUser2Id())) {
             return ResponseEntity.status(403).build();
         }
 
@@ -234,6 +247,9 @@ public class ChatController {
         // Ensure user is a participant
         boolean isParticipant = chat.getUser1Id().equals(userId) || chat.getUser2Id().equals(userId);
         if (!isParticipant) {
+            return ResponseEntity.status(403).build();
+        }
+        if (!connectionRepository.existsBetweenUsers(chat.getUser1Id(), chat.getUser2Id())) {
             return ResponseEntity.status(403).build();
         }
 

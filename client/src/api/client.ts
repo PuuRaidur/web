@@ -94,6 +94,7 @@ export async function updateMyProfile(profile: {
   aboutMe: string;
   profilePictureUrl: string | null;
   location: string;
+  preferredDistanceKm?: number | null;
 }) {
   return apiFetch<ProfileResponse>("/me/profile", {
     method: "PUT",
@@ -155,6 +156,12 @@ export async function dismissConnectionRequest(senderId: number) {
 
 export async function cancelConnectionRequest(receiverId: number) {
   return apiPost("/connections/cancel", { receiverId });
+}
+
+export async function disconnectWithUser(userId: number) {
+  return apiFetch<void>(`/connections/with/${userId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function login(email: string, password: string) {

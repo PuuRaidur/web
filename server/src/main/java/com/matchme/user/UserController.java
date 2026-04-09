@@ -41,8 +41,9 @@ public class UserController {
         Profile profile = profileRepository.findByUserId(id).orElse(null);
         String name = (profile != null) ? profile.getDisplayName() : null;
         String profilePictureUrl = (profile != null) ? profile.getProfilePictureUrl() : null;
+        String profileLink = "/users/" + id + "/profile";
 
-        return ResponseEntity.ok(new UserSummaryResponse(id, name, profilePictureUrl));
+        return ResponseEntity.ok(new UserSummaryResponse(id, name, profilePictureUrl, profileLink));
     }
 
     // public profile info fo a given user id

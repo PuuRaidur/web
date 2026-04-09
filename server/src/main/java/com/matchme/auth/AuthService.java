@@ -28,7 +28,7 @@ public class AuthService {
     }
 
     // Method to register a new user.
-    public String register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request) {
 
         // Checks if email already exists; if yes, throws error.
         if (userRepository.findByEmail(request.email).isPresent()) {
@@ -42,11 +42,11 @@ public class AuthService {
         userRepository.save(user);
 
         // Returns a JWT for the new user.
-        return jwtService.generateToken(user.getId());
+        return new AuthResult(user.getId(), jwtService.generateToken(user.getId()));
     }
 
     // Method to authenticate a user.
-    public String login(LoginRequest request){
+    public AuthResult login(LoginRequest request){
 
         // Finds the user by email or throws if not found.
         User user = userRepository.findByEmail(request.email)
@@ -58,6 +58,6 @@ public class AuthService {
         }
 
         // Returns JWT if login is valid.
-        return jwtService.generateToken(user.getId());
+        return new AuthResult(user.getId(), jwtService.generateToken(user.getId()));
     }
 }

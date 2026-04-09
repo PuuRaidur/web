@@ -16,13 +16,28 @@ SELECT
 FROM generate_series(1, 100) AS g;
 
 -- Profiles
-INSERT INTO profiles (user_id, display_name, about_me, profile_picture_url, location, created_at, updated_at)
+INSERT INTO profiles (user_id, display_name, about_me, profile_picture_url, location, latitude, longitude, preferred_distance_km, created_at, updated_at)
 SELECT
   u.id,
   'User ' || u.id,
   'Hello! I am user ' || u.id || ' and I enjoy meeting new people.',
   NULL,
   (ARRAY['Tallinn','Tartu','Riga','Helsinki','Vilnius'])[(u.id % 5) + 1],
+  CASE (u.id % 5)
+    WHEN 0 THEN 59.4370
+    WHEN 1 THEN 58.3776
+    WHEN 2 THEN 56.9496
+    WHEN 3 THEN 60.1699
+    ELSE 54.6872
+  END,
+  CASE (u.id % 5)
+    WHEN 0 THEN 24.7536
+    WHEN 1 THEN 26.7290
+    WHEN 2 THEN 24.1052
+    WHEN 3 THEN 24.9384
+    ELSE 25.2797
+  END,
+  50,
   NOW(),
   NOW()
 FROM users u;

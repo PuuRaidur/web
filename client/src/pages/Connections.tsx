@@ -4,6 +4,7 @@ import {
   fetchConnections,
   fetchUserSummary,
   getOrCreateChat,
+  disconnectWithUser,
 } from "../api/client";
 import type { UserSummary } from "../api/types";
 import Avatar from "../components/Avatar";
@@ -54,6 +55,15 @@ export default function Connections() {
     }
   }
 
+  async function handleDisconnect(userId: number) {
+    try {
+      await disconnectWithUser(userId);
+      setItems((prev) => prev.filter((item) => item.id !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to disconnect");
+    }
+  }
+
   return (
     <section className="page">
       <header className="page-header">
@@ -93,7 +103,11 @@ export default function Connections() {
               >
                 Message
               </button>
-              <button className="danger-button" type="button">
+              <button
+                className="danger-button"
+                type="button"
+                onClick={() => handleDisconnect(item.id)}
+              >
                 Disconnect
               </button>
             </div>
