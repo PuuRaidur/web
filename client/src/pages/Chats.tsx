@@ -105,8 +105,9 @@ export default function Chats() {
 
       try {
         const data = await fetchChatMessages(selectedChatId);
+        const ordered = [...data].reverse();
         if (isActive) {
-          setMessages(data);
+          setMessages(ordered);
         }
         await markChatRead(selectedChatId);
       } catch (err) {
@@ -127,13 +128,25 @@ export default function Chats() {
     connectChatSocket();
     const unsubscribe = addChatListener((event) => {
       if (event.type === "message" && event.message) {
-        if (event.chatId === selectedChatId) {
+        if (selectedChatId != null && Number(event.chatId) === Number(selectedChatId)) {
+          // Show incoming message immediately for the active chat.
           setMessages((prev) => {
             if (prev.some((m) => m.id === event.message!.id)) {
               return prev;
             }
-            return [event.message!, ...prev];
+            return [...prev, event.message!];
           });
+
+          // Sync with server after immediate UI update.
+          fetchChatMessages(selectedChatId)
+            .then((data) => {
+              const ordered = [...data].reverse();
+              setMessages(ordered);
+              return markChatRead(selectedChatId);
+            })
+            .catch(() => {
+              // No-op: immediate append already applied.
+            });
         }
         refreshChats();
       }
@@ -194,7 +207,7 @@ export default function Chats() {
 
     try {
       const newMessage = await sendChatMessage(selectedChatId, draft.trim());
-      setMessages((prev) => [newMessage, ...prev]);
+      setMessages((prev) => [...prev, newMessage]);
       setDraft("");
       sendTyping(selectedChatId, false);
     } catch (err) {
