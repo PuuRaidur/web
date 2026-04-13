@@ -6,7 +6,7 @@ import com.matchme.chat.dto.ChatResponse;
 import com.matchme.chat.dto.MessageResponse;
 import com.matchme.chat.dto.SendMessageRequest;
 import com.matchme.connection.ConnectionRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.matchme.realtime.SocketIoRealtimeService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,19 +31,19 @@ public class ChatController {
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final ChatReadRepository chatReadRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final SocketIoRealtimeService realtimeService;
     private final ConnectionRepository connectionRepository;
 
 
     public ChatController(ChatRepository chatRepository,
                           MessageRepository messageRepository,
                           ChatReadRepository chatReadRepository,
-                          SimpMessagingTemplate messagingTemplate,
+                          SocketIoRealtimeService realtimeService,
                           ConnectionRepository connectionRepository) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.chatReadRepository = chatReadRepository;
-        this.messagingTemplate = messagingTemplate;
+        this.realtimeService = realtimeService;
         this.connectionRepository = connectionRepository;
     }
 
@@ -162,18 +162,9 @@ public class ChatController {
         );
 
         // Notify subscribers for real-time updates
-        messagingTemplate.convertAndSend("/topic/chat." + chatId, response);
         Long otherUserId = chat.getUser1Id().equals(userId) ? chat.getUser2Id() : chat.getUser1Id();
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),
-                "/queue/chat-updates",
-                new ChatEvent("message", chatId, userId, null, response)
-        );
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(otherUserId),
-                "/queue/chat-updates",
-                new ChatEvent("message", chatId, userId, null, response)
-        );
+        realtimeService.emitChatEventToUser(userId, new ChatEvent("message", chatId, userId, null, response));
+        realtimeService.emitChatEventToUser(otherUserId, new ChatEvent("message", chatId, userId, null, response));
 
         return ResponseEntity.ok(response);
     }
@@ -266,11 +257,7 @@ public class ChatController {
         read.setLastReadAt(Instant.now());
         chatReadRepository.save(read);
 
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),
-                "/queue/chat-updates",
-                new ChatEvent("read", chatId, userId, null, null)
-        );
+        realtimeService.emitChatEventToUser(userId, new ChatEvent("read", chatId, userId, null, null));
 
         return ResponseEntity.ok().build();
     }

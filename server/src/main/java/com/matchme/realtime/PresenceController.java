@@ -10,10 +10,10 @@ import java.util.Set;
 @RestController
 public class PresenceController {
 
-    private final PresenceEventListener presenceEventListener;
+    private final SocketIoRealtimeService socketIoRealtimeService;
 
-    public PresenceController(PresenceEventListener presenceEventListener) {
-        this.presenceEventListener = presenceEventListener;
+    public PresenceController(SocketIoRealtimeService socketIoRealtimeService) {
+        this.socketIoRealtimeService = socketIoRealtimeService;
     }
 
     @GetMapping("/presence/online")
@@ -21,6 +21,6 @@ public class PresenceController {
         if (authentication == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(presenceEventListener.getOnlineUserIds());
+        return ResponseEntity.ok(socketIoRealtimeService.getOnlineUserIds());
     }
 }

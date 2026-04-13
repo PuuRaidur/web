@@ -5,6 +5,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +37,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             String token = raw.startsWith("Bearer ") ? raw.substring(7) : raw;
             Long userId = jwtService.parseUserId(token);
             accessor.setUser(new UserPrincipal(String.valueOf(userId)));
+            accessor.setLeaveMutable(true);
+            return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
         }
 
         return message;
