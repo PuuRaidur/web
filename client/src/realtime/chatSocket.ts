@@ -72,7 +72,7 @@ export function addPresenceListener(listener: (event: PresenceEvent) => void) {
 }
 
 export function sendTyping(chatId: number, isTyping: boolean) {
-  if (!client || !client.active) return;
+  if (!client || !client.connected) return;
   client.publish({
     destination: "/app/chat.typing",
     body: JSON.stringify({ chatId, isTyping }),

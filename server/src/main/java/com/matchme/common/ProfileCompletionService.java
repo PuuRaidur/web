@@ -27,7 +27,13 @@ public class ProfileCompletionService {
         var profile = profileOpt.get();
         var bio = bioOpt.get();
 
-        // profile must have all 5 required fields
+        // profile must have required fields
+        if (isBlank(profile.getDisplayName())) return false;
+        if (isBlank(profile.getAboutMe())) return false;
+        if (isBlank(profile.getLocation())) return false;
+        if (profile.getPreferredDistanceKm() == null || profile.getPreferredDistanceKm() <= 0) return false;
+
+        // bio must have all 5 required fields
         if (isBlank(bio.getHobbies())) return false;
         if (isBlank(bio.getMusicPreferences())) return false;
         if (isBlank(bio.getFoodPreferences())) return false;

@@ -1,6 +1,6 @@
 import type {
   ConnectionRequestResponse,
-  ConnectionDetail,
+  ConnectionResponse,
   MeResponse,
   ChatListItem,
   ChatMessage,
@@ -62,7 +62,7 @@ export async function fetchRecommendations() {
 }
 
 export async function dismissRecommendation(userId: number) {
-  return apiFetch<void>(`/recommendations/dismiss/${userId}`, { method: "POST" });
+  return apiPost(`/recommendations/dismiss/${userId}`);
 }
 
 export async function fetchConnectionRequests() {
@@ -74,7 +74,7 @@ export async function fetchOutgoingConnectionRequests() {
 }
 
 export async function fetchConnections() {
-  return apiFetch<ConnectionDetail[]>("/connections");
+  return apiFetch<ConnectionResponse>("/connections");
 }
 
 export async function fetchUserSummary(id: number) {
@@ -98,6 +98,7 @@ export async function updateMyProfile(profile: {
   aboutMe: string;
   profilePictureUrl: string | null;
   location: string;
+  preferredDistanceKm?: number | null;
 }) {
   return apiFetch<ProfileResponse>("/me/profile", {
     method: "PUT",
@@ -161,8 +162,10 @@ export async function cancelConnectionRequest(receiverId: number) {
   return apiPost("/connections/cancel", { receiverId });
 }
 
-export async function disconnect(connectionId: number) {
-  return apiFetch<void>(`/connections/${connectionId}`, { method: "DELETE" });
+export async function disconnectWithUser(userId: number) {
+  return apiFetch<void>(`/connections/with/${userId}`, {
+    method: "DELETE",
+  });
 }
 
 export async function login(email: string, password: string) {
@@ -181,6 +184,10 @@ export async function register(email: string, password: string) {
 
 export async function fetchChats() {
   return apiFetch<ChatListItem[]>("/chats");
+}
+
+export async function fetchOnlineUsers() {
+  return apiFetch<number[]>("/presence/online");
 }
 
 export async function fetchChatMessages(chatId: number, page = 0, size = 20) {

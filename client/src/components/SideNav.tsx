@@ -19,6 +19,7 @@ export default function SideNav({ unreadCount = 0 }: SideNavProps) {
   function handleLogout() {
     // Remove stored auth token and redirect to login.
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_email");
     navigate("/login");
   }
 

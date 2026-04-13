@@ -227,4 +227,21 @@ public class ConnectionController {
 
         return ResponseEntity.ok().build();
     }
+
+    // Disconnect from a user by user id (for clients that don't have connection ids)
+    @DeleteMapping("/connections/with/{otherUserId}")
+    public ResponseEntity<Void> disconnectByUser(Authentication authentication,
+                                                 @PathVariable Long otherUserId) {
+        Long currentUserId = (Long) authentication.getPrincipal();
+        profileCompletionService.requireComplete(currentUserId);
+
+        Connection connection = connectionRepository.findBetweenUsers(currentUserId, otherUserId)
+                .orElse(null);
+        if (connection == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        connectionRepository.delete(connection);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../AuthContext";
+import { login } from "../api/client";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +15,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      // Call backend to get JWT.
+      const { token } = await login(email, password);
+      // Store token for future API calls.
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("auth_email", email);
+      // Redirect to main app.
       navigate("/recommendations");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import AppLayout from "./layouts/AppLayout";
 import Recommendations from "./pages/Recommendations";
@@ -13,9 +13,16 @@ import { fetchMyBio, fetchMyProfile } from "./api/client";
 import "./App.css";
 
 export default function App() {
-  // Simple auth check based on stored token.
-  const isAuthed = Boolean(localStorage.getItem("auth_token"));
+  const location = useLocation();
+  const [isAuthed, setIsAuthed] = useState(() =>
+    Boolean(localStorage.getItem("auth_token"))
+  );
   const [profileReady, setProfileReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Re-evaluate auth state on navigation so route guards stay in sync.
+    setIsAuthed(Boolean(localStorage.getItem("auth_token")));
+  }, [location]);
 
   useEffect(() => {
     let isActive = true;

@@ -20,14 +20,14 @@ public class AuthController {
     // Public endpoint: create user and return JWT
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        String token = authService.register(request);
-        return ResponseEntity.ok(new AuthResponse(token));
+        AuthResult result = authService.register(request);
+        return ResponseEntity.ok(new AuthResponse(result.userId, result.token));
     }
 
     // Public endpoint: verify credentials and return JWT
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(new AuthResponse(token));
+        AuthResult result = authService.login(request);
+        return ResponseEntity.ok(new AuthResponse(result.userId, result.token));
     }
 }

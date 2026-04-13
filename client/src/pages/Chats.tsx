@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   fetchChatMessages,
   fetchChats,
+  fetchOnlineUsers,
   fetchUserSummary,
   markChatRead,
   sendChatMessage,
@@ -41,6 +42,9 @@ export default function Chats() {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remoteTypingTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>(
+    {}
+  );
 
   const selectedChat = useMemo(
     () => chats.find((chat) => chat.chatId === selectedChatId) ?? null,
@@ -51,7 +55,16 @@ export default function Chats() {
     try {
       setLoading(true);
       const data = await fetchChats();
+      const onlineUserIds = await fetchOnlineUsers();
+      const onlineSet = new Set(onlineUserIds);
       setChats(data);
+      setPresence(() => {
+        const nextPresence: Record<number, boolean> = {};
+        data.forEach((chat) => {
+          nextPresence[chat.otherUserId] = onlineSet.has(chat.otherUserId);
+        });
+        return nextPresence;
+      });
       if (data.length > 0 && selectedChatId === null) {
         setSelectedChatId(data[0].chatId);
       }
@@ -126,12 +139,32 @@ export default function Chats() {
       }
 
       if (event.type === "typing") {
-        if (!event.senderId) return;
         if (event.chatId !== selectedChatId) return;
-        setTyping((prev) => ({
-          ...prev,
-          [event.chatId]: Boolean(event.isTyping),
-        }));
+        if (event.isTyping) {
+          setTyping((prev) => ({
+            ...prev,
+            [event.chatId]: true,
+          }));
+          if (remoteTypingTimers.current[event.chatId]) {
+            clearTimeout(remoteTypingTimers.current[event.chatId]);
+          }
+          remoteTypingTimers.current[event.chatId] = setTimeout(() => {
+            setTyping((prev) => ({
+              ...prev,
+              [event.chatId]: false,
+            }));
+            delete remoteTypingTimers.current[event.chatId];
+          }, 2500);
+        } else {
+          if (remoteTypingTimers.current[event.chatId]) {
+            clearTimeout(remoteTypingTimers.current[event.chatId]);
+            delete remoteTypingTimers.current[event.chatId];
+          }
+          setTyping((prev) => ({
+            ...prev,
+            [event.chatId]: false,
+          }));
+        }
       }
 
       if (event.type === "read") {
@@ -149,6 +182,10 @@ export default function Chats() {
     return () => {
       unsubscribe();
       unsubscribePresence();
+      Object.values(remoteTypingTimers.current).forEach((timer) =>
+        clearTimeout(timer)
+      );
+      remoteTypingTimers.current = {};
     };
   }, [refreshChats, selectedChatId]);
 

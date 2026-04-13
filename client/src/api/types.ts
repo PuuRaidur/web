@@ -15,20 +15,26 @@ export type UserSummary = {
   id: number;
   name: string | null;
   profilePictureUrl: string | null;
+  profileLink?: string | null;
 };
 
 export type MeResponse = {
   id: number;
+  email: string;
   name: string | null;
   profilePictureUrl: string | null;
 };
 
 export type ProfileResponse = {
   userId: number;
+  email: string | null;
   displayName: string | null;
   aboutMe: string | null;
   profilePictureUrl: string | null;
   location: string | null;
+  preferredDistanceKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type BioResponse = {

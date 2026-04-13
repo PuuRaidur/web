@@ -40,6 +40,7 @@ public class MatchingService {
                     MatchingScore score = calculateMatchingScore(currentUserProps, candidate);
                     return new ScoredCandidate(candidate, score);
                 })
+                .filter(scored -> scored.getScore() >= MatchingScoreThresholds.MIN_TOTAL_SCORE)
                 .sorted(Comparator.comparingDouble(ScoredCandidate::getScore).reversed())
                 .map(ScoredCandidate::getCandidate)
                 .collect(Collectors.toList());
@@ -133,5 +134,9 @@ public class MatchingService {
         public double getScore() {
             return score;
         }
+    }
+
+    private static class MatchingScoreThresholds {
+        private static final double MIN_TOTAL_SCORE = 0.25;
     }
 }
