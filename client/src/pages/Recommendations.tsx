@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  dismissRecommendation,
   fetchMe,
   fetchOutgoingConnectionRequests,
   fetchRecommendations,
@@ -84,9 +85,13 @@ export default function Recommendations() {
     }
   }
 
-  function handleDismiss(userId: number) {
-    // For now we only hide it on the UI.
-    setItems((prev) => prev.filter((item) => item.id !== userId));
+  async function handleDismiss(userId: number) {
+    try {
+      await dismissRecommendation(userId);
+      setItems((prev) => prev.filter((item) => item.id !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to dismiss recommendation");
+    }
   }
 
   return (

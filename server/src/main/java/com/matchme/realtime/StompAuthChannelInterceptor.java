@@ -26,6 +26,9 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             List<String> authHeaders = accessor.getNativeHeader("Authorization");
             if (authHeaders == null || authHeaders.isEmpty()) {
+                authHeaders = accessor.getNativeHeader("authorization");
+            }
+            if (authHeaders == null || authHeaders.isEmpty()) {
                 throw new IllegalArgumentException("Missing Authorization header");
             }
 

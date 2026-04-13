@@ -19,6 +19,7 @@ export default function Login() {
       const { token } = await login(email, password);
       // Store token for future API calls.
       localStorage.setItem("auth_token", token);
+      localStorage.setItem("auth_email", email);
       // Redirect to main app.
       navigate("/recommendations");
     } catch (err) {

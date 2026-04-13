@@ -6,8 +6,10 @@ import com.matchme.auth.dto.RegisterRequest;
 import com.matchme.user.User;
 import com.matchme.user.UserRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 // Marks this class as a Spring service.
 @Service
@@ -32,7 +34,7 @@ public class AuthService {
 
         // Checks if email already exists; if yes, throws error.
         if (userRepository.findByEmail(request.email).isPresent()) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         }
 
         // Creates a new user, hashes the password with bcrypt, saves to DB.
@@ -50,11 +52,11 @@ public class AuthService {
 
         // Finds the user by email or throws if not found.
         User user = userRepository.findByEmail(request.email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
         // Compares raw password to stored hash; throws on mismatch.
         if (!passwordEncoder.matches(request.password, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         // Returns JWT if login is valid.

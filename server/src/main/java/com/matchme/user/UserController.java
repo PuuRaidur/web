@@ -63,12 +63,16 @@ public class UserController {
                 .map(profile -> ResponseEntity.ok(
                         new com.matchme.profile.dto.ProfileResponse(
                                 profile.getUser().getId(),
+                                viewerId.equals(id) ? profile.getUser().getEmail() : null,
                                 profile.getDisplayName(),
                                 profile.getAboutMe(),
                                 profile.getProfilePictureUrl(),
-                                profile.getLocation()
+                                profile.getLocation(),
+                                profile.getPreferredDistanceKm(),
+                                profile.getLatitude(),
+                                profile.getLongitude()
                         )
                 ))
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.<com.matchme.profile.dto.ProfileResponse>notFound().build());
     }
 }

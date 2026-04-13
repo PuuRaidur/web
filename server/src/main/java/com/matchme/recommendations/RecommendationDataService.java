@@ -153,30 +153,19 @@ public class RecommendationDataService {
 
         if (lat != null && lon != null) {
             double finalPreferredDistance = preferredDistance;
-            String normalized = location != null ? location.trim().toLowerCase() : null;
             return candidates.stream()
                     .filter(candidate -> {
                         if (candidate.latitude != null && candidate.longitude != null) {
                             double distance = calculateHaversineDistance(lat, lon, candidate.latitude, candidate.longitude);
                             return distance <= finalPreferredDistance;
                         }
-                        if (normalized == null) {
-                            return false;
-                        }
-                        return candidate.location != null
-                                && candidate.location.trim().equalsIgnoreCase(normalized);
+                        // If candidate coordinates are missing, keep candidate and let matching score handle ranking.
+                        return true;
                     })
                     .collect(Collectors.toList());
         }
 
-        if (location != null && !location.isBlank()) {
-            String normalized = location.trim().toLowerCase();
-            return candidates.stream()
-                    .filter(candidate -> candidate.location != null
-                            && candidate.location.trim().equalsIgnoreCase(normalized))
-                    .collect(Collectors.toList());
-        }
-
+        // Without current user coordinates we cannot do reliable distance filtering.
         return candidates;
     }
 

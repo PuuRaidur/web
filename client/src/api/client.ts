@@ -61,6 +61,10 @@ export async function fetchRecommendations() {
   return apiFetch<RecommendationResponse>("/recommendations");
 }
 
+export async function dismissRecommendation(userId: number) {
+  return apiPost(`/recommendations/dismiss/${userId}`);
+}
+
 export async function fetchConnectionRequests() {
   return apiFetch<ConnectionRequestResponse>("/connections/requests");
 }
@@ -180,6 +184,10 @@ export async function register(email: string, password: string) {
 
 export async function fetchChats() {
   return apiFetch<ChatListItem[]>("/chats");
+}
+
+export async function fetchOnlineUsers() {
+  return apiFetch<number[]>("/presence/online");
 }
 
 export async function fetchChatMessages(chatId: number, page = 0, size = 20) {

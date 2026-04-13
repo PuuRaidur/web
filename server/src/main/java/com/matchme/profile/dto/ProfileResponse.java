@@ -2,6 +2,7 @@ package com.matchme.profile.dto;
 
 public class ProfileResponse {
     public Long userId;
+    public String email;
     public String displayName;
     public String aboutMe;
     public String profilePictureUrl;
@@ -10,10 +11,11 @@ public class ProfileResponse {
     public Double latitude;
     public Double longitude;
 
-    public ProfileResponse(Long userId, String displayName, String aboutMe,
+    public ProfileResponse(Long userId, String email, String displayName, String aboutMe,
                            String profilePictureUrl, String location,
                            Integer preferredDistanceKm, Double latitude, Double longitude) {
         this.userId = userId;
+        this.email = email;
         this.displayName = displayName;
         this.aboutMe = aboutMe;
         this.profilePictureUrl = profilePictureUrl;

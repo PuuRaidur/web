@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.time.Instant;
 
 
 
@@ -212,19 +211,22 @@ public class ChatController {
                         );
                     }
 
-                    return new ChatListItem(
+                    ChatListItem item = new ChatListItem(
                             chat.getId(),
                             otherUserId,
                             lastMessage,
                             lastMessageAt,
                             unreadCount
                     );
+                    Instant activityAt = lastMessageAt != null ? lastMessageAt : chat.getCreatedAt();
+                    return new ChatWithActivity(item, activityAt);
                 })
-                // Sort by most recent message time (nulls last)
+                // Sort by most recent activity time (latest message, or chat creation if no messages yet)
                 .sorted(Comparator.comparing(
-                        (ChatListItem item) -> item.lastMessageAt,
-                        Comparator.nullsLast(Comparator.reverseOrder())
+                        ChatWithActivity::getActivityAt,
+                        Comparator.reverseOrder()
                 ))
+                .map(ChatWithActivity::getItem)
                 .toList();
 
         return ResponseEntity.ok(items);
@@ -271,6 +273,24 @@ public class ChatController {
         );
 
         return ResponseEntity.ok().build();
+    }
+
+    private static class ChatWithActivity {
+        private final ChatListItem item;
+        private final Instant activityAt;
+
+        private ChatWithActivity(ChatListItem item, Instant activityAt) {
+            this.item = item;
+            this.activityAt = activityAt;
+        }
+
+        private ChatListItem getItem() {
+            return item;
+        }
+
+        private Instant getActivityAt() {
+            return activityAt;
+        }
     }
 
 

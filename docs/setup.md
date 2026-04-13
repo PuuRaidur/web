@@ -12,24 +12,29 @@ git fetch
 git checkout <branch-nimi>
 ```
 
-## 2) Andmebaas
-Default seadistus on `application.properties` failis:
-`/Users/eikelangerbaur/Code/Code/match-me web/server/src/main/resources/application.properties`
+## 2) Andmebaas ja salajased muutujad
+`application.properties` kasutab tundlike väärtuste jaoks environment variable'eid.
 
-Seal on:
-- URL: `jdbc:postgresql://localhost:5432/matchme`
-- kasutaja: `postgres`
-- parool: `postgres`
+Enne backendi käivitamist sea need:
 
-Vali üks variant:
-
-A) Tee DB kasutajaga `postgres` ja parooliga `postgres`
-```sql
-CREATE USER postgres WITH PASSWORD 'postgres';
-CREATE DATABASE matchme OWNER postgres;
+```bash
+export DB_USERNAME=<sinu_db_kasutaja>
+export DB_PASSWORD=<sinu_db_parool>
+export JWT_SECRET=<vahemalt_32_baiti_pikk_salajane_voti>
 ```
 
-B) Kasuta oma olemasolevat kasutajat/parooli ja muuda `application.properties` vastavalt.
+DB URL on vaikimisi `jdbc:postgresql://localhost:5432/matchme`.
+Loo vajadusel andmebaas:
+
+```sql
+CREATE DATABASE matchme;
+```
+
+`JWT_SECRET` genereerimiseks sobib näiteks:
+
+```bash
+openssl rand -base64 64
+```
 
 ## 3) Käivita backend
 ```bash

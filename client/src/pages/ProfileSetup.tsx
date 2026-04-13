@@ -42,6 +42,7 @@ export default function ProfileSetup() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [email, setEmail] = useState("");
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(
     null
   );
@@ -66,6 +67,7 @@ export default function ProfileSetup() {
                 ? String(existingProfile.preferredDistanceKm)
                 : "",
           });
+          setEmail(me.email ?? existingProfile.email ?? localStorage.getItem("auth_email") ?? "");
           setProfilePictureUrl(existingProfile.profilePictureUrl ?? null);
           setBio({
             hobbies: existingBio.hobbies ?? "",
@@ -246,6 +248,10 @@ export default function ProfileSetup() {
               </button>
             </div>
           </div>
+          <label className="form-field">
+            <span>Email</span>
+            <input type="email" value={email} readOnly />
+          </label>
           <label className="form-field">
             <span>Display name</span>
             <input

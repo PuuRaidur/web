@@ -95,6 +95,7 @@ public class ProfileController {
     private ProfileResponse toResponse(Profile profile) {
         return new ProfileResponse(
                 profile.getUser().getId(),
+                profile.getUser().getEmail(),
                 profile.getDisplayName(),
                 profile.getAboutMe(),
                 profile.getProfilePictureUrl(),

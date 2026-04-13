@@ -8,7 +8,9 @@ import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class PresenceEventListener {
@@ -38,5 +40,9 @@ public class PresenceEventListener {
         if (userId != null) {
             messagingTemplate.convertAndSend("/topic/presence", new PresenceEvent(userId, false));
         }
+    }
+
+    public Set<Long> getOnlineUserIds() {
+        return sessionUsers.values().stream().collect(Collectors.toSet());
     }
 }

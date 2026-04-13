@@ -33,7 +33,7 @@ public class MeController {
                     String name = (profile != null) ? profile.getDisplayName() : null;
                     String profilePictureUrl = (profile != null) ? profile.getProfilePictureUrl() : null;
 
-                    return ResponseEntity.ok(new MeResponse(user.getId(), name, profilePictureUrl));
+                    return ResponseEntity.ok(new MeResponse(user.getId(), user.getEmail(), name, profilePictureUrl));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
