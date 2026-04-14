@@ -3,6 +3,7 @@ package com.matchme.recommendations;
 import com.matchme.bio.BioRepository;
 import com.matchme.profile.ProfileRepository;
 import com.matchme.profile.Profile;
+import com.matchme.profile.LocationCatalog;
 import com.matchme.recommendations.dto.RecommendationCandidate;
 import com.matchme.recommendations.matching.MatchingService;
 import com.matchme.user.UserRepository;
@@ -143,30 +144,57 @@ public class RecommendationDataService {
             return candidates;
         }
 
-        String location = currentProfile.getLocation();
+        String currentCity = LocationCatalog.normalize(currentProfile.getLocation());
+        if (currentCity == null) {
+            return List.of();
+        }
+        if (!LocationCatalog.isKnownCity(currentCity)) {
+            return List.of();
+        }
+
         Double lat = currentProfile.getLatitude();
         Double lon = currentProfile.getLongitude();
-        Integer preferredDistance = currentProfile.getPreferredDistanceKm();
-        if (preferredDistance == null) {
-            preferredDistance = 50;
+        if (lat == null || lon == null) {
+            double[] coords = LocationCatalog.coordinatesFor(currentCity);
+            if (coords != null) {
+                lat = coords[0];
+                lon = coords[1];
+            }
         }
 
-        if (lat != null && lon != null) {
-            double finalPreferredDistance = preferredDistance;
-            return candidates.stream()
-                    .filter(candidate -> {
-                        if (candidate.latitude != null && candidate.longitude != null) {
-                            double distance = calculateHaversineDistance(lat, lon, candidate.latitude, candidate.longitude);
-                            return distance <= finalPreferredDistance;
-                        }
-                        // If candidate coordinates are missing, keep candidate and let matching score handle ranking.
+        int preferredDistance = LocationCatalog.clampPreferredDistance(currentProfile.getPreferredDistanceKm());
+        Double finalLat = lat;
+        Double finalLon = lon;
+
+        return candidates.stream()
+                .filter(candidate -> {
+                    String candidateCity = LocationCatalog.normalize(candidate.location);
+                    if (candidateCity == null) {
+                        return false;
+                    }
+
+                    if (candidateCity.equals(currentCity)) {
                         return true;
-                    })
-                    .collect(Collectors.toList());
-        }
+                    }
 
-        // Without current user coordinates we cannot do reliable distance filtering.
-        return candidates;
+                    Double candidateLat = candidate.latitude;
+                    Double candidateLon = candidate.longitude;
+                    if ((candidateLat == null || candidateLon == null) && LocationCatalog.isKnownCity(candidateCity)) {
+                        double[] coords = LocationCatalog.coordinatesFor(candidateCity);
+                        if (coords != null) {
+                            candidateLat = coords[0];
+                            candidateLon = coords[1];
+                        }
+                    }
+
+                    if (finalLat == null || finalLon == null || candidateLat == null || candidateLon == null) {
+                        return false;
+                    }
+
+                    double distance = calculateHaversineDistance(finalLat, finalLon, candidateLat, candidateLon);
+                    return distance <= preferredDistance;
+                })
+                .collect(Collectors.toList());
     }
 
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

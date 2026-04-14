@@ -24,6 +24,16 @@ type BioForm = {
   lookingFor: string;
 };
 
+const CITY_OPTIONS = [
+  "Tallinn",
+  "Tartu",
+  "Riga",
+  "Helsinki",
+  "Vilnius",
+  "Oslo",
+  "Tokyo",
+] as const;
+
 export default function ProfileSetup() {
   const apiBase = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
   const [profile, setProfile] = useState<ProfileForm>({
@@ -279,13 +289,21 @@ export default function ProfileSetup() {
           </label>
           <label className="form-field">
             <span>Location</span>
-            <input
-              type="text"
+            <select
               value={profile.location}
               onChange={(event) =>
                 handleProfileChange("location", event.target.value)
               }
-            />
+            >
+              <option value="" disabled>
+                Select your city
+              </option>
+              {CITY_OPTIONS.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
             {fieldErrors.location && (
               <span className="field-error">{fieldErrors.location}</span>
             )}
