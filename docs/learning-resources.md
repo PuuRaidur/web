@@ -1,4 +1,4 @@
-# Learning Resources
+# Learning Resources (for the curious)
 
 ## HTML & CSS
 
