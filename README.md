@@ -246,3 +246,9 @@ Both the frontend and backend support environment variables:
 
 **Issue**: WebSocket connection failing
 **Solution**: Verify Socket.IO server is running on port 8081 and check CORS settings
+
+## Afterword
+
+I give big thanks to my teammate Eike Langerbaur who helped us a lot in the development of this project.
+She is a really structured, nice and efficient teammate to work with.
+Without her, the project would have been much more difficult for me.
